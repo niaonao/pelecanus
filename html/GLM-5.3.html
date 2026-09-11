@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>落日骑行 · 一只鹈鹕的黄金时刻</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#0a0d10;
+    font-family:'Fraunces','Songti SC','STSong',serif; }
+  #stage { position:fixed; inset:0; }
+  #stage canvas { display:block; opacity:0; transition:opacity 1.2s ease; }
+  #stage canvas.on { opacity:1; }
+  .ui { position:fixed; z-index:10; pointer-events:none; color:#f3e7d3; }
+  .top { top:26px; left:30px; }
+  .top h1 { font-size:34px; font-weight:500; font-style:italic; letter-spacing:.06em; line-height:1;
+    text-shadow:0 2px 18px rgba(60,20,0,.45); }
+  .top .sub { margin-top:10px; font-size:10px; letter-spacing:.42em; color:#ffb066; text-transform:uppercase; }
+  .top .rule { margin-top:14px; width:52px; height:1px; background:rgba(255,200,150,.5); }
+  .hint { bottom:26px; left:30px; font-size:12px; letter-spacing:.08em; color:rgba(243,231,211,.72);
+    transition:opacity 1.5s; line-height:1.9; }
+  .hint b { color:#ffb066; font-weight:600; }
+  .hint.dim { opacity:.32; }
+  .speedo { bottom:30px; left:50%; transform:translateX(-50%); text-align:center; }
+  .speedo .num { font-size:44px; font-weight:300; font-variant-numeric:tabular-nums;
+    text-shadow:0 2px 16px rgba(60,20,0,.5); }
+  .speedo .num small { font-size:11px; letter-spacing:.3em; margin-left:8px; color:rgba(243,231,211,.6); }
+  .speedo .label { margin-top:4px; font-size:11px; letter-spacing:.5em; color:#ffb066; text-indent:.5em; }
+  .actions { bottom:26px; right:26px; display:flex; flex-direction:column; gap:10px; pointer-events:auto; }
+  .actions button { pointer-events:auto; background:rgba(12,16,20,.42); backdrop-filter:blur(6px);
+    border:1px solid rgba(246,233,210,.28); color:#f3e7d3; padding:9px 18px; font-family:inherit;
+    font-size:12px; letter-spacing:.18em; cursor:pointer; transition:.25s; min-width:150px; text-align:left; }
+  .actions button:hover { border-color:#ffb066; color:#ffb066; }
+  .actions button.hold { background:rgba(255,176,102,.16); border-color:#ffb066; color:#ffb066; }
+  @media (max-width:640px){
+    .top h1{font-size:24px} .hint{display:none} .speedo .num{font-size:32px}
+    .actions button{min-width:120px; padding:8px 12px}
+  }
+  @media (pointer:coarse){ .hint .kb { display:none; } }
+  @media (pointer:fine){ .hint .tp { display:none; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<header class="ui top">
+  <h1>落日骑行</h1>
+  <div class="sub">Sunset Ride · Pelican</div>
+  <div class="rule"></div>
+</header>
+
+<div class="ui hint" id="hint">
+  <span class="kb">拖拽环视 · 滚轮缩放 · <b>W / S</b> 调速 · 长按 <b>空格</b> 站立冲刺 · <b>B</b> 铃声 · <b>C</b> 换机位 · 点击鹈鹕试试</span>
+  <span class="tp">单指拖拽环视 · 双指缩放 · 长按「站立冲刺」按钮 · 点击鹈鹕试试</span>
+</div>
+
+<div class="ui speedo">
+  <div class="num"><span id="speedVal">13</span><small>KM/H</small></div>
+  <div class="label" id="speedLabel">巡 航</div>
+</div>
+
+<div class="ui actions">
+  <button id="btnCam">机位 · 逆光</button>
+  <button id="btnSprint">站立冲刺</button>
+  <button id="btnBell">铃</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ================= 基础 ================= */
+const V3 = (x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const M = THREE.MathUtils;
+const rand = (a,b)=>a+Math.random()*(b-a);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+document.getElementById('stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(new THREE.Color('#dd8352'), 24, 120);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 1500);
+camera.position.set(-11, 5, -15);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0.2, 1.35, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 2.2; controls.maxDistance = 22;
+controls.maxPolarAngle = 1.54; controls.enablePan = false;
+controls.enabled = false;
+
+/* 灯光：落日低角度主光 + 冷青轮廓光 + 半球环境 */
+const sunDir = new THREE.Vector3(0.28, 0.055, 0.96).normalize();
+const sunLight = new THREE.DirectionalLight('#ffa04e', 2.8);
+sunLight.position.copy(sunDir).multiplyScalar(40);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+Object.assign(sunLight.shadow.camera, { left:-7, right:7, top:9, bottom:-4, near:5, far:90 });
+sunLight.shadow.bias = -0.0004; sunLight.shadow.normalBias = 0.025;
+scene.add(sunLight, sunLight.target);
+scene.add(new THREE.HemisphereLight('#86b8c9', '#5a4436', 0.55));
+const rimLight = new THREE.DirectionalLight('#4fb3c4', 1.15);
+rimLight.position.set(-26, 10, -22); scene.add(rimLight);
+
+/* ================= 工具几何 ================= */
+/* 羽毛：压扁弯曲的胶囊 */
+function featherGeo(len, wide, curve=0.3){
+  const r = wide*0.5;
+  const g = new THREE.CapsuleGeometry(r, Math.max(len-2*r, .001), 4, 7);
+  g.scale(1, 1, 0.28);
+  const p = g.attributes.position;
+  for (let i=0;i<p.count;i++){
+    const t = M.clamp((p.getY(i)+len*0.5)/len, 0, 1);
+    p.setX(i, p.getX(i) + curve*len*t*t);
+  }
+  g.translate(0, len*0.5, 0);
+  return g;
+}
+/* 变半径管（棕榈干 / 鱼 / 法棍） */
+function taperedTube(pts, rFn, tubSeg=20, radSeg=8){
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const fr = curve.computeFrenetFrames(tubSeg, false);
+  const pos=[], nor=[], uv=[], idx=[];
+  for (let i=0;i<=tubSeg;i++){
+    const t=i/tubSeg, P=curve.getPoint(t), N=fr.normals[i], B=fr.binormals[i], r=rFn(t);
+    for (let j=0;j<=radSeg;j++){
+      const a=j/radSeg*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a);
+      const nx=N.x*ca+B.x*sa, ny=N.y*ca+B.y*sa, nz=N.z*ca+B.z*sa;
+      pos.push(P.x+nx*r, P.y+ny*r, P.z+nz*r); nor.push(nx,ny,nz); uv.push(t, j/radSeg);
+    }
+  }
+  for (let i=0;i<tubSeg;i++) for (let j=0;j<radSeg;j++){
+    const a=i*(radSeg+1)+j, b=a+1, c=a+radSeg+1, d=c+1;
+    idx.push(a,c,b, b,c,d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor,3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx);
+  return g;
+}
+function tubeFromPoints(pts, r, mat, segs=24){
+  const c = new THREE.CatmullRomCurve3(pts.map(p=>V3(...p)));
+  const m = new THREE.Mesh(new THREE.TubeGeometry(c, segs, r, 8, false), mat);
+  m.castShadow = true; return m;
+}
+function xform(geo, px,py,pz, rx=0,ry=0,rz=0){
+  geo.applyMatrix4(new THREE.Matrix4().compose(V3(px,py,pz),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)), V3(1,1,1)));
+  return geo;
+}
+
+/* ================= 材质 ================= */
+const std = (color, opt={})=>new THREE.MeshStandardMaterial({ color, ...opt });
+const MAT = {
+  feather:  std('#f2e8d5', {flatShading:true, roughness:.85, side:THREE.DoubleSide}),
+  feather2: std('#c9c2b2', {flatShading:true, roughness:.9,  side:THREE.DoubleSide}),
+  feather3: std('#474e54', {flatShading:true, roughness:.9,  side:THREE.DoubleSide}),
+  beak:     std('#e89a3f', {flatShading:true, roughness:.6}),
+  pouch:    std('#e0885e', {flatShading:true, roughness:.7}),
+  leg:      std('#d98a5f', {flatShading:true, roughness:.65}),
+  frame:    std('#1f6f6b', {metalness:.35, roughness:.42}),
+  leather:  std('#6b4a2f', {roughness:.8}),
+  chrome:   std('#a9b0b6', {metalness:.85, roughness:.35}),
+  tire:     std('#2b2c30', {roughness:.95}),
+  rim:      std('#d9d2c0', {metalness:.6, roughness:.4}),
+  wood:     std('#6e5a41', {flatShading:true, roughness:1}),
+  dark:     std('#22262a', {roughness:1}),
+  road:     std('#454a52', {roughness:.95}),
+  stone:    std('#59503f', {flatShading:true, roughness:1}),
+  white:    std('#d7cfc0', {roughness:.7}),
+  line:     std('#ded6c2', {roughness:.8}),
+  dune:     std('#a5804a', {flatShading:true, roughness:1}),
+  grass:    std('#7d6a3a', {flatShading:true, roughness:1}),
+  leaf:     std('#5c7a3a', {flatShading:true, roughness:1, side:THREE.DoubleSide}),
+  rock:     std('#4a4440', {flatShading:true, roughness:1}),
+  cloud:    std('#f2ddc4', {flatShading:true, roughness:1}),
+  cloudDim: std('#d9b598', {flatShading:true, roughness:1}),
+  gull:     std('#2e3439', {flatShading:true, roughness:1}),
+  fish:     std('#a3bfc9', {flatShading:true, roughness:.5}),
+  bread:    std('#c98d4e', {flatShading:true, roughness:.8}),
+  breadCut: std('#8a5a2e', {roughness:.9}),
+};
+
+/* ================= 天空 / 太阳 / 海 ================= */
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, fog:false, depthWrite:false,
+  uniforms:{
+    uHorizon:{value:new THREE.Color('#ff9550')}, uZenith:{value:new THREE.Color('#14313f')},
+    uHaze:{value:new THREE.Color('#d97e50')}, uSunDir:{value:sunDir},
+    uSunGlow:{value:new THREE.Color('#ffb46a')},
+  },
+  vertexShader:`varying vec3 vDir; void main(){ vDir=position;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`varying vec3 vDir;
+    uniform vec3 uHorizon,uZenith,uHaze,uSunDir,uSunGlow;
+    void main(){
+      vec3 d=normalize(vDir); float h=d.y;
+      vec3 col=mix(uHorizon,uZenith,smoothstep(0.02,0.62,h));
+      col=mix(col,uHaze,smoothstep(0.05,-0.12,h));
+      float s=clamp(dot(d,uSunDir),0.0,1.0);
+      col+=uSunGlow*(pow(s,7.0)*0.28+pow(s,90.0)*1.2);
+      gl_FragColor=vec4(col,1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(480,32,20), skyMat));
+
+/* 太阳圆盘 + 大气光晕 */
+const sunGroup = new THREE.Group();
+sunGroup.position.copy(sunDir).multiplyScalar(380);
+sunGroup.lookAt(0,2,0);
+const sunDisk = new THREE.Mesh(new THREE.CircleGeometry(26,48),
+  new THREE.MeshBasicMaterial({color:'#ffd9a8', fog:false}));
+sunGroup.add(sunDisk);
+[[42,.30],[74,.12]].forEach(([r,o])=>{
+  const g = new THREE.Mesh(new THREE.CircleGeometry(r,48),
+    new THREE.MeshBasicMaterial({color:'#ffb066', fog:false, transparent:true, opacity:o,
+      blending:THREE.AdditiveBlending, depthWrite:false}));
+  g.position.z = -2; sunGroup.add(g);
+});
+scene.add(sunGroup);
+
+/* 海面：顶点波浪 + 面法线波光（落日反射带） */
+const seaMat = new THREE.ShaderMaterial({
+  uniforms:{
+    uTime:{value:0}, uSunDir:{value:sunDir}, uCam:{value:V3()},
+    uDeep:{value:new THREE.Color('#0c3138')}, uCrest:{value:new THREE.Color('#3d7079')},
+    uFogColor:{value:new THREE.Color('#dd8352')}, uFogNear:{value:24}, uFogFar:{value:120},
+  },
+  vertexShader:`uniform float uTime; varying vec3 vW;
+    void main(){
+      vec3 p=position; float t=uTime;
+      p.y += sin(p.x*0.24+t*1.15)*0.13 + sin(p.z*0.3-t*0.85)*0.1
+           + sin((p.x+p.z)*0.11+t*0.55)*0.17 + sin((p.x*0.71-p.z*0.42)*0.5+t*1.8)*0.045;
+      vec4 wp=modelMatrix*vec4(p,1.0); vW=wp.xyz;
+      gl_Position=projectionMatrix*viewMatrix*wp;
+    }`,
+  fragmentShader:`uniform vec3 uSunDir,uCam,uDeep,uCrest,uFogColor;
+    uniform float uTime,uFogNear,uFogFar; varying vec3 vW;
+    void main(){
+      vec3 n=normalize(cross(dFdx(vW),dFdy(vW))); if(n.y<0.0) n=-n;
+      vec3 v=normalize(uCam-vW);
+      float fr=pow(1.0-clamp(dot(n,v),0.0,1.0),3.0);
+      vec3 col=mix(uDeep,uCrest,fr*0.75);
+      vec3 hv=normalize(v+uSunDir);
+      float sp=pow(clamp(dot(n,hv),0.0,1.0),110.0);
+      float shimmer=0.5+0.5*sin(vW.x*1.6+uTime*1.4)*sin(vW.z*1.2-uTime*0.9);
+      float band=exp(-pow((vW.x-0.29*vW.z)/30.0,2.0));
+      col+=vec3(1.0,0.52,0.25)*sp*shimmer*(0.8+3.2*band);
+      col=mix(col,uFogColor,smoothstep(uFogNear,uFogFar,length(uCam-vW)));
+      gl_FragColor=vec4(col,1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`
+});
+const seaGeo = new THREE.PlaneGeometry(360, 260, 130, 96);
+seaGeo.rotateX(-Math.PI/2); seaGeo.translate(0, 0, 128);
+const sea = new THREE.Mesh(seaGeo, seaMat);
+sea.position.y = -1.02; scene.add(sea);
+
+/* ================= 环境：跑步机式滚动世界 ================= */
+const scrollers = [];
+function addScroller(obj, cycle){ scrollers.push({obj, cycle}); scene.add(obj); }
+
+/* 沙丘地形（静态） */
+function duneH(x, z){
+  const t = M.clamp((-z-4.2)/9, 0, 1);
+  return t*t*2.4 + (Math.sin(x*0.16+z*0.11)*0.35 + Math.sin(x*0.05-z*0.21)*0.45)*Math.min(t*2,1);
+}
+{
+  const g = new THREE.PlaneGeometry(340, 72, 60, 14);
+  g.rotateX(-Math.PI/2); g.translate(0, 0, -39);
+  const p = g.attributes.position;
+  for (let i=0;i<p.count;i++) p.setY(i, duneH(p.getX(i), p.getZ(i)));
+  g.computeVertexNormals();
+  const dune = new THREE.Mesh(g, MAT.dune);
+  dune.receiveShadow = true; scene.add(dune);
+}
+/* 路面（静态底板 + 滚动虚线） */
+{
+  const road = new THREE.Mesh(new THREE.BoxGeometry(320,.12,6.4), MAT.road);
+  road.position.set(0,-.06,0); road.receiveShadow = true; scene.add(road);
+  const sh = new THREE.Mesh(new THREE.BoxGeometry(320,.1,.55), std('#6a6257'));
+  sh.position.set(0,-.05,-3.42); scene.add(sh);
+  [-2.55,2.55].forEach(z=>{
+    const l = new THREE.Mesh(new THREE.BoxGeometry(320,.012,.1), MAT.line);
+    l.position.set(0,.007,z); scene.add(l);
+  });
+  /* 海侧堤坡与挡墙 */
+  const emb = new THREE.Mesh(new THREE.BoxGeometry(320,.25,1.9), MAT.stone);
+  emb.position.set(0,-.56,3.95); emb.rotation.x = .52; scene.add(emb);
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(320,.42,.3), MAT.stone);
+  wall.position.set(0,.21,3.1); wall.receiveShadow = true; scene.add(wall);
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(320,.06,.4), MAT.stone);
+  cap.position.set(0,.44,3.1); scene.add(cap);
+  [.66,.5].forEach(y=>{
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(170,.045,.05), MAT.white);
+    rail.position.set(0,y,3.13); scene.add(rail);
+  });
+}
+/* 中心虚线 */
+{
+  const g = new THREE.BoxGeometry(1.5,.012,.14);
+  for (let i=0;i<25;i++){
+    const m = new THREE.Mesh(g, MAT.line);
+    m.position.set((i-12.5)*4, .007, 0);
+    addScroller(m, 100);
+  }
+}
+/* 护栏柱 */
+{
+  const post = mergeGeometries([
+    xform(new THREE.BoxGeometry(.06,.6,.06), 0,.3,0),
+    xform(new THREE.SphereGeometry(.045,7,5), 0,.62,0),
+  ]);
+  for (let i=0;i<13;i++){
+    const m = new THREE.Mesh(post, MAT.white);
+    m.position.set((i-6)*8, .44, 3.13); m.castShadow = true;
+    addScroller(m, 104);
+  }
+}
+/* 电线杆 + 垂坠电线 */
+{
+  const S = 27, N = 8;
+  for (let k=0;k<N;k++){
+    const pole = new THREE.Group();
+    const body = mergeGeometries([
+      xform(new THREE.CylinderGeometry(.055,.08,4.8,7), 0,2.4,0),
+      xform(new THREE.BoxGeometry(.07,.06,.95), 0,4.35,0),
+    ]);
+    const bm = new THREE.Mesh(body, MAT.wood); bm.castShadow = true; pole.add(bm);
+    const wires = [];
+    [-0.3,0,0.3].forEach(zk=>{
+      const c = new THREE.CatmullRomCurve3([V3(0,4.24,zk), V3(13.5,3.78,zk), V3(27,4.24,zk)]);
+      wires.push(new THREE.TubeGeometry(c, 12, .012, 5, false));
+      wires.push(xform(new THREE.CylinderGeometry(.03,.03,.09,6), 0,4.28,zk));
+    });
+    pole.add(new THREE.Mesh(mergeGeometries(wires), MAT.dark));
+    pole.position.set((k-N/2+0.5)*S, 0, -4.8);
+    addScroller(pole, S*N);
+  }
+}
+/* 棕榈树 */
+{
+  const S = 26, N = 8;
+  for (let k=0;k<N;k++){
+    const gp = new THREE.Group();
+    const top = V3(0.8, 4.2, 0.3);
+    const trunk = new THREE.Mesh(
+      taperedTube([V3(0,0,0), V3(0.15,1.3,0.1), V3(0.45,2.7,0.2), top], t=>0.14-0.06*t, 14, 7),
+      MAT.wood);
+    trunk.castShadow = true;
+    gp.add(new THREE.Mesh(mergeGeometries([
+      trunk.geometry,
+      xform(new THREE.SphereGeometry(.11,7,5), top.x-0.12, top.y-0.1, top.z+0.2),
+      xform(new THREE.SphereGeometry(.10,7,5), top.x+0.05, top.y-0.16, top.z-0.1),
+    ]), MAT.wood));
+    const leaves = [];
+    for (let i=0;i<7;i++){
+      const g = featherGeo(1.7, .36, .5);
+      const a = i/7*Math.PI*2 + rand(-.15,.15);
+      const m = new THREE.Matrix4().makeRotationY(a)
+        .multiply(new THREE.Matrix4().makeRotationZ(-1.25+rand(-.12,.12)));
+      m.setPosition(top.x, top.y, top.z);
+      g.applyMatrix4(m); leaves.push(g);
+    }
+    const lm = new THREE.Mesh(mergeGeometries(leaves), MAT.leaf);
+    lm.castShadow = true; gp.add(lm);
+    const x = (k-N/2+0.5)*S + rand(-6,6), z = rand(-7.5,-11.5);
+    gp.scale.setScalar(rand(.8,1.25));
+    gp.rotation.y = rand(0,6.28);
+    gp.position.set(x, duneH(x,z)-0.15, z);
+    addScroller(gp, S*N);
+  }
+}
+/* 草簇与礁石 */
+{
+  for (let i=0;i<15;i++){
+    const g = mergeGeometries([
+      xform(new THREE.ConeGeometry(.05,.3,5), 0,.15,0),
+      xform(new THREE.ConeGeometry(.04,.22,4), .07,.11,.04),
+      xform(new THREE.ConeGeometry(.04,.26,4), -.06,.13,-.03),
+    ]);
+    const m = new THREE.Mesh(g, MAT.grass);
+    const x=(i-7.5)*7+rand(-2.5,2.5), z=rand(-4.8,-14);
+    m.position.set(x, duneH(x,z)+.02, z); m.rotation.y = rand(0,6);
+    addScroller(m, 105);
+  }
+  const rockG = new THREE.IcosahedronGeometry(1,1);
+  const rp = rockG.attributes.position;
+  for (let i=0;i<rp.count;i++) rp.setXYZ(i, rp.getX(i)*rand(.8,1.2), rp.getY(i)*rand(.7,1.1), rp.getZ(i)*rand(.8,1.2));
+  rockG.computeVertexNormals();
+  for (let i=0;i<2;i++){
+    const m = new THREE.Mesh(rockG, MAT.rock);
+    const x=(i-1)*50+rand(-15,15), z=rand(-6,-18);
+    m.scale.set(rand(1.4,2.4),rand(.8,1.2),rand(1,1.8));
+    m.position.set(x, duneH(x,z)+.1, z); m.rotation.y = rand(0,6);
+    m.castShadow = true; addScroller(m, 100);
+  }
+  /* 远处礁石剪影 */
+  [[-45,150],[25,175],[70,140]].forEach(([x,z])=>{
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1,1), std('#2f3b44',{flatShading:true}));
+    m.scale.set(rand(5,8),rand(2,3.5),rand(3,5)); m.position.set(x,0,z); scene.add(m);
+  });
+}
+/* 云 */
+const clouds = [];
+{
+  for (let i=0;i<7;i++){
+    const g = new THREE.Group();
+    const n = 4+Math.floor(rand(0,3));
+    for (let j=0;j<n;j++){
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1,1), i<5?MAT.cloud:MAT.cloudDim);
+      m.scale.set(rand(1.4,3),rand(.4,.8),rand(.9,1.6));
+      m.position.set(rand(-2.4,2.4), rand(-.3,.3), rand(-.8,.8));
+      g.add(m);
+    }
+    g.position.set(rand(-130,130), rand(9,22), rand(45,140));
+    g.userData.sp = rand(.3,.7);
+    clouds.push(g); scene.add(g);
+  }
+}
+/* 远处海鸥 */
+const gulls = [];
+{
+  for (let i=0;i<3;i++){
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(.05,.22,3,6), MAT.gull);
+    body.geometry.rotateX(Math.PI/2); g.add(body);
+    const wg = new THREE.BoxGeometry(.55,.02,.16);
+    const wl = new THREE.Mesh(xform(wg.clone(),-.29,0,0), MAT.gull);
+    const wr = new THREE.Mesh(xform(wg.clone(), .29,0,0), MAT.gull);
+    g.add(wl,wr);
+    g.scale.setScalar(rand(.8,1.3));
+    g.userData = { a:rand(0,6.28), r:rand(8,15), cy:rand(5,8), sp:rand(.25,.45), ph:rand(0,6), wl, wr };
+    gulls.push(g); scene.add(g);
+  }
+}
+
+/* ================= 自行车 ================= */
+const sceneRoll = new THREE.Group(); scene.add(sceneRoll);
+const bikeRoot = new THREE.Group(); sceneRoll.add(bikeRoot);
+const pelicanRoot = new THREE.Group(); sceneRoll.add(pelicanRoot);
+
+function makeWheel(){
+  const w = new THREE.Group();
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(.5,.048,10,40), MAT.tire);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(.462,.016,8,40), MAT.rim);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.11,10), MAT.chrome);
+  hub.geometry.rotateX(Math.PI/2);
+  w.add(tire, rim, hub);
+  for (let i=0;i<8;i++){
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(.004,.004,.9,5), MAT.chrome);
+    s.geometry.rotateZ(Math.PI/2); s.rotation.z = i*Math.PI/8;
+    w.add(s);
+  }
+  w.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+  return w;
+}
+/* 车架管 */
+[
+  [[.52,.96,0],[.3,.66,0],[.02,.42,0]],
+  [[-.245,.95,0],[.12,.99,0],[.53,.96,0]],
+  [[0,.42,0],[-.13,.68,0],[-.26,.93,0]],
+].forEach(p=>bikeRoot.add(tubeFromPoints(p,.03,MAT.frame)));
+bikeRoot.add(tubeFromPoints([[.5,.88,0],[.64,1.09,0]],.042,MAT.frame));
+[1,-1].forEach(s=>{
+  bikeRoot.add(tubeFromPoints([[-.24,.94,s*.05],[-.45,.71,s*.05],[-.61,.49,s*.055]],.015,MAT.frame));
+  bikeRoot.add(tubeFromPoints([[0,.42,s*.05],[-.34,.47,s*.05],[-.59,.49,s*.055]],.017,MAT.frame));
+});
+bikeRoot.add(tubeFromPoints([[-.25,.93,0],[-.3,.955,0]],.02,MAT.chrome));
+/* 坐垫 */
+{
+  const g = new THREE.CapsuleGeometry(.055,.2,4,8); g.rotateZ(Math.PI/2); g.scale(1,1,.5);
+  const s = new THREE.Mesh(g, MAT.leather);
+  s.position.set(-.29,.94,0); s.rotation.z = -.1; s.castShadow = true; bikeRoot.add(s);
+}
+/* 齿盘、飞轮、中轴 */
+{
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(.115,.115,.016,22), MAT.chrome);
+  ring.geometry.rotateX(Math.PI/2); ring.position.set(0,.42,.075); bikeRoot.add(ring);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.02,14), MAT.frame);
+  cap.geometry.rotateX(Math.PI/2); cap.position.set(0,.42,.085); bikeRoot.add(cap);
+  const cog = new THREE.Mesh(new THREE.CylinderGeometry(.052,.052,.014,14), MAT.chrome);
+  cog.geometry.rotateX(Math.PI/2); cog.position.set(-.605,.495,.07); bikeRoot.add(cog);
+  const axle = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.17,10), MAT.chrome);
+  axle.geometry.rotateX(Math.PI/2); axle.position.set(0,.42,0); bikeRoot.add(axle);
+}
+/* 后轮 + 后挡泥板 + 尾灯 */
+const rearWheel = makeWheel(); rearWheel.position.set(-.62,.5,0); bikeRoot.add(rearWheel);
+{
+  const f = new THREE.Mesh(new THREE.TorusGeometry(.575,.03,8,22,2.2), MAT.frame);
+  f.rotation.z = .55; f.scale.z = 2.4; f.position.set(-.62,.5,0); f.castShadow = true; bikeRoot.add(f);
+}
+const tailLampMat = std('#5a1a12', {emissive:'#ff3020', emissiveIntensity:.2});
+{
+  const l = new THREE.Mesh(new THREE.BoxGeometry(.05,.035,.05), tailLampMat);
+  l.position.set(-1.12,.76,0); bikeRoot.add(l);
+}
+/* 链条（小环沿回路循环） */
+const CHAIN = { BB:V3(0,.42), R1:.115, RX:-.6, RY:.50, R2:.052 };
+CHAIN.P = 2*.6 + Math.PI*(CHAIN.R1+CHAIN.R2);
+function chainPoint(s, out, tang){
+  const a1 = .6/CHAIN.P, a2 = Math.PI*CHAIN.R1/CHAIN.P, a3 = .6/CHAIN.P;
+  s = ((s%1)+1)%1;
+  if (s < a1){ const u=s/a1;
+    out.set(CHAIN.RX+u*.6, CHAIN.RY+CHAIN.R2+u*(-.017), .075); tang.set(1,0,0);
+  } else if (s < a1+a2){ const u=(s-a1)/a2, phi=Math.PI/2-u*Math.PI;
+    out.set(CHAIN.BB.x+CHAIN.R1*Math.cos(phi), CHAIN.BB.y+CHAIN.R1*Math.sin(phi), .075);
+    tang.set(-Math.sin(phi), Math.cos(phi), 0);
+  } else if (s < a1+a2+a3){ const u=(s-a1-a2)/a3;
+    out.set(-u*.6, CHAIN.BB.y-CHAIN.R1+u*.143, .075); tang.set(-1,0,0);
+  } else { const u=(s-a1-a2-a3)/(1-a1-a2-a3), phi=-Math.PI/2+u*Math.PI;
+    out.set(CHAIN.RX+CHAIN.R2*Math.cos(phi), CHAIN.RY+CHAIN.R2*Math.sin(phi), .075);
+    tang.set(-Math.sin(phi), Math.cos(phi), 0);
+  }
+}
+const chainInst = new THREE.InstancedMesh(new THREE.BoxGeometry(.03,.015,.011), MAT.chrome, 26);
+chainInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+bikeRoot.add(chainInst);
+
+/* 曲柄组 */
+const crankGroup = new THREE.Group(); crankGroup.position.set(0,.42,0); bikeRoot.add(crankGroup);
+const pedals = {};
+[1,-1].forEach(s=>{
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(.05,.2,.03), MAT.chrome);
+  arm.position.set(0,-s*.087, s*.06); arm.castShadow = true; crankGroup.add(arm);
+  const pedal = new THREE.Mesh(new THREE.BoxGeometry(.15,.02,.095), MAT.dark);
+  pedal.position.set(0,-s*.175, s*.115); pedal.castShadow = true; crankGroup.add(pedal);
+  pedals[s] = pedal;
+});
+/* 前叉转向组 */
+const steerGroup = new THREE.Group(); steerGroup.position.set(.52,.95,0);
+steerGroup.quaternion.setFromUnitVectors(V3(0,1,0), V3(.555,.832,0).normalize());
+bikeRoot.add(steerGroup);
+const steerInner = new THREE.Group(); steerGroup.add(steerInner);
+const gripAnchors = {}, frontWheel = makeWheel();
+{
+  [1,-1].forEach(s=>{
+    steerInner.add(tubeFromPoints([[0,.02,s*.055],[.28,-.02,s*.055],[.545,-.184,s*.055]],.017,MAT.frame));
+  });
+  const crown = new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.16), MAT.frame);
+  crown.position.set(.05,0,0); crown.castShadow = true; steerInner.add(crown);
+  frontWheel.position.set(.545,-.184,0); steerInner.add(frontWheel);
+  const ff = new THREE.Mesh(new THREE.TorusGeometry(.575,.03,8,20,1.6), MAT.frame);
+  ff.rotation.z = 1.9; ff.scale.z = 2.4; ff.position.set(.545,-.184,0); ff.castShadow = true;
+  steerInner.add(ff);
+  steerInner.add(tubeFromPoints([[0,.1,0],[0,.26,0],[.07,.3,0]],.022,MAT.chrome));
+  steerInner.add(tubeFromPoints([[.01,.26,-.3],[.06,.27,-.12],[.07,.3,0],[.06,.27,.12],[.01,.26,.3]],.017,MAT.chrome));
+  [1,-1].forEach(s=>{
+    const grip = new THREE.Mesh(new THREE.CapsuleGeometry(.026,.08,4,8), MAT.leather);
+    grip.geometry.rotateZ(Math.PI/2);
+    grip.position.set(.035,.262,s*.275);
+    grip.quaternion.setFromUnitVectors(V3(1,0,0), V3(-.6,-.1,s*.75).normalize());
+    grip.castShadow = true; steerInner.add(grip);
+    const a = new THREE.Object3D(); a.position.set(.02,.26,s*.29); steerInner.add(a);
+    gripAnchors[s] = a;
+  });
+  /* 车铃 */
+  const bellCap = new THREE.Mesh(new THREE.SphereGeometry(.035,10,6,0,Math.PI*2,0,Math.PI/2), MAT.chrome);
+  bellCap.position.set(.13,.31,.14);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.05,6), MAT.chrome);
+  stem.position.set(.13,.29,.14); steerInner.add(bellCap, stem);
+  steerInner.userData.bellCap = bellCap;
+}
+/* 车筐（挂在转向组上，含补偿旋转保持水平）+ 鱼 + 法棍 */
+const fishGeo = taperedTube([V3(-.16,0,0),V3(-.05,0,0),V3(.07,0,0),V3(.17,0,0)],
+  t=>.012+.04*Math.sin(Math.PI*Math.min(1,.15+t*.8)), 16, 7);
+function makeFish(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(fishGeo, MAT.fish); body.scale.set(1,1.3,.6); g.add(body);
+  [-1,1].forEach(s=>{
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(.05,.09,4), MAT.fish);
+    tail.scale.z=.35; tail.position.set(-.2, s*.02,0); tail.rotation.z = s*.9; g.add(tail);
+  });
+  const fin = new THREE.Mesh(new THREE.ConeGeometry(.03,.07,4), MAT.fish);
+  fin.scale.z=.3; fin.position.set(.02,.06,0); fin.rotation.z=-.5; g.add(fin);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(.012,6,4), std('#15181a'));
+  eye.position.set(.1,.02,.036); g.add(eye);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  return g;
+}
+{
+  const basket = new THREE.Group();
+  basket.position.set(.34,.31,0); basket.rotation.z = .58;
+  const wires = [ xform(new THREE.BoxGeometry(.3,.015,.2), 0,0,0) ];
+  for (const x of [-.14,.14]) for (const z of [-.07,0,.07]) wires.push(xform(new THREE.BoxGeometry(.012,.15,.012), x,.075,z));
+  for (const z of [-.1,.1]) for (const x of [-.07,0,.07]) wires.push(xform(new THREE.BoxGeometry(.012,.15,.012), x,.075,z));
+  wires.push(xform(new THREE.BoxGeometry(.3,.012,.012), 0,.15,-.1), xform(new THREE.BoxGeometry(.3,.012,.012), 0,.15,.1),
+    xform(new THREE.BoxGeometry(.012,.012,.212), -.14,.15,0), xform(new THREE.BoxGeometry(.012,.012,.212), .14,.15,0));
+  const bm = new THREE.Mesh(mergeGeometries(wires), std('#4b4640',{roughness:.9}));
+  bm.castShadow = true; basket.add(bm);
+  const f = makeFish(); f.position.set(.05,.07,.02); f.rotation.set(0,0,1.4); basket.add(f);
+  const bag = new THREE.Group();
+  bag.add(new THREE.Mesh(taperedTube([V3(-.19,0,0),V3(0,.015,0),V3(.19,0,0)], t=>.052+.006*Math.sin(t*20), 12, 6), MAT.bread));
+  for (let i=0;i<4;i++){
+    const cut = new THREE.Mesh(new THREE.BoxGeometry(.07,.012,.055), MAT.breadCut);
+    cut.position.set(-.11+i*.08,.045,.0); cut.rotation.z=.6; cut.rotation.x=rand(-.3,.3); bag.add(cut);
+  }
+  bag.position.set(-.05,.09,-.02); bag.rotation.set(0,.3,.42); bag.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  basket.add(bag);
+  steerInner.add(basket);
+}
+
+/* ================= 鹈鹕 ================= */
+const torso = new THREE.Group(); torso.position.set(-.24,1.305,0); pelicanRoot.add(torso);
+const torsoRoll0 = 0;
+{
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1,12,9), MAT.feather);
+  body.scale.set(.21,.48,.29); body.position.y = .42; body.castShadow = true; torso.add(body);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(1,10,8), MAT.feather);
+  chest.scale.set(.17,.30,.24); chest.position.y = .72; chest.castShadow = true; torso.add(chest);
+  const hip = new THREE.Mesh(new THREE.SphereGeometry(1,10,8), MAT.feather);
+  hip.scale.set(.19,.19,.28); hip.position.y = -.13; torso.add(hip);
+  /* 背部叠羽 */
+  [.35,.6,.85].forEach((y,i)=>{
+    const f = new THREE.Mesh(featherGeo(.5,.19,.18), MAT.feather);
+    f.position.set(0,y,0); f.rotation.set((i-1)*.14,0,.05*(i%2?1:-1)); torso.add(f);
+  });
+  /* 肩羽 */
+  [1,-1].forEach(s=>{
+    const f = new THREE.Mesh(featherGeo(.48,.24,.15), MAT.feather);
+    f.position.set(0,.42,s*.22); f.rotation.x = s*1.35; torso.add(f);
+  });
+}
+/* 尾羽 */
+const tailGroup = new THREE.Group(); tailGroup.position.set(0,-.1,0); torso.add(tailGroup);
+{
+  for (let i=0;i<6;i++){
+    const f = new THREE.Mesh(featherGeo(.36,.075,.1), MAT.feather2);
+    f.rotation.set((i-2.5)*.16, 0, Math.PI-.5-(i%2)*.04); tailGroup.add(f);
+  }
+}
+/* 锚点 */
+const anchors = {};
+[1,-1].forEach(s=>{
+  const hip = new THREE.Object3D(); hip.position.set(.03,-.06,s*.15); torso.add(hip);
+  const sh = new THREE.Object3D(); sh.position.set(0,.44,s*.25); torso.add(sh);
+  anchors['hip'+s] = hip; anchors['sh'+s] = sh;
+});
+const neckBaseAnchor = new THREE.Object3D(); neckBaseAnchor.position.set(0,.78,0); torso.add(neckBaseAnchor);
+
+/* 头 */
+const headGroup = new THREE.Group(); pelicanRoot.add(headGroup);
+const jawAnchor = new THREE.Object3D(); jawAnchor.position.set(.42,-.08,0);
+let pouchMesh, crest = [], eyes = [];
+{
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.16,12,9), MAT.feather);
+  head.scale.set(1.05,.92,.92); head.castShadow = true; headGroup.add(head);
+  /* 眼睛（含高光） */
+  [1,-1].forEach(s=>{
+    const ring = new THREE.Mesh(new THREE.SphereGeometry(.05,8,6), std('#d9c9a0',{flatShading:true}));
+    ring.position.set(.08,.03,s*.125); headGroup.add(ring);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(.023,7,5), std('#15181a'));
+    pupil.position.set(.115,.035,s*.136); headGroup.add(pupil);
+    const hl = new THREE.Mesh(new THREE.SphereGeometry(.008,5,4),
+      new THREE.MeshBasicMaterial({color:'#fff6e0'}));
+    hl.position.set(.126,.05,s*.148); headGroup.add(hl);
+    eyes.push(pupil, ring);
+  });
+  /* 上喙 */
+  const beak = new THREE.Mesh(taperedTube([V3(.1,.02,0),V3(.26,.01,0),V3(.42,0,0),V3(.6,-.02,0)],
+    t=>.055*Math.pow(1-t,.85)+.004, 14, 6), MAT.beak);
+  beak.scale.set(1,.55,1.5); beak.castShadow = true; headGroup.add(beak);
+  /* 下喙 + 喉囊（张合组） */
+  const jaw = new THREE.Group(); jaw.position.set(.1,-.015,0); headGroup.add(jaw);
+  const low = new THREE.Mesh(taperedTube([V3(0,0,0),V3(.14,-.01,0),V3(.3,-.02,0),V3(.5,-.03,0)],
+    t=>.03*(1-t)+.004, 12, 6), std('#c97a35',{flatShading:true}));
+  low.scale.set(1,.5,1.35); low.castShadow = true; jaw.add(low);
+  pouchMesh = new THREE.Mesh(new THREE.SphereGeometry(1,10,8), MAT.pouch);
+  pouchMesh.scale.set(.16,.075,.105); pouchMesh.position.set(.24,-.06,0); jaw.add(pouchMesh);
+  headGroup.userData.jaw = jaw;
+  headGroup.add(jawAnchor);
+  /* 羽冠 */
+  for (let i=0;i<3;i++){
+    const f = new THREE.Mesh(featherGeo(.16,.05,.25), MAT.feather);
+    f.position.set(-.1,.09,(i-1)*.045);
+    f.rotation.set(0,(i-1)*.25, Math.PI-.22); headGroup.add(f); crest.push(f);
+  }
+  /* 复古骑行帽 */
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(.175,12,8,0,Math.PI*2,0,1.32), std('#b8452e',{flatShading:true,roughness:.7}));
+  cap.position.set(0,.075,0); cap.scale.set(1,.8,1); cap.rotation.z = .06; cap.castShadow = true; headGroup.add(cap);
+  const brim = new THREE.Mesh(new THREE.CircleGeometry(.14,10,0,Math.PI),
+    std('#e5d9c0',{side:THREE.DoubleSide}));
+  brim.geometry.rotateX(-Math.PI/2); brim.geometry.rotateY(Math.PI/2);
+  brim.position.set(.1,.115,0); brim.rotation.z = -.12; headGroup.add(brim);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(.172,.01,6,16), MAT.white);
+  band.rotation.x = Math.PI/2; band.position.y = .07; headGroup.add(band);
+}
+/* 鱼（叼在喙中） */
+const fish = makeFish(); fish.position.set(.30,-.11,.01); fish.rotation.set(0,0,.25);
+headGroup.add(fish);
+
+/* 脖子：每帧重建的低模变半径管 */
+const NECK = { TUB:22, RAD:9 };
+const neckGeo = new THREE.BufferGeometry();
+{
+  const verts = (NECK.TUB+1)*(NECK.RAD+1);
+  neckGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts*3), 3));
+  neckGeo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(verts*3).fill(1), 3));
+  const idx = [];
+  for (let i=0;i<NECK.TUB;i++) for (let j=0;j<NECK.RAD;j++){
+    const a=i*(NECK.RAD+1)+j, b=a+1, c=a+NECK.RAD+1, d=c+1;
+    idx.push(a,c,b, b,c,d);
+  }
+  neckGeo.setIndex(idx);
+}
+const neckMesh = new THREE.Mesh(neckGeo, MAT.feather);
+neckMesh.frustumCulled = false; neckMesh.castShadow = true; pelicanRoot.add(neckMesh);
+function catmull(out, p0,p1,p2,p3, t){
+  const t2=t*t, t3=t2*t;
+  const c0=-.5*t+t2-.5*t3, c1=1.5*t3-2.5*t2+1, c2=-1.5*t3+2*t2+.5*t, c3=.5*t3-.5*t2;
+  out.set(0,0,0).addScaledVector(p0,c0).addScaledVector(p1,c1).addScaledVector(p2,c2).addScaledVector(p3,c3);
+  return out;
+}
+
+/* 肢体（挂 pelicanRoot，用世界坐标 IK 摆放） */
+const legs = [], wings = [];
+function makeLimbMesh(r, mat, flat=1){
+  const g = new THREE.CapsuleGeometry(r, 1-2*r, 4, 8);
+  if (flat!==1) g.scale(1,1,flat);
+  const m = new THREE.Mesh(g, mat); m.castShadow = true; return m;
+}
+function jointBall(r, mat){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r,8,6), mat); m.castShadow = true; return m;
+}
+const footGeoBase = new THREE.ConeGeometry(.085,.19,7);
+footGeoBase.rotateZ(-Math.PI/2); footGeoBase.scale(1.15,.4,1.05);
+[1,-1].forEach(side=>{
+  const thigh = makeLimbMesh(.10, MAT.feather, .85);
+  const shin = makeLimbMesh(.042, MAT.leg, .85);
+  const foot = new THREE.Mesh(footGeoBase, MAT.leg); foot.castShadow = true;
+  const kneeB = jointBall(.075, MAT.feather), ankleB = jointBall(.042, MAT.leg);
+  pelicanRoot.add(thigh, shin, foot, kneeB, ankleB);
+  legs.push({ side, thigh, shin, foot, kneeB, ankleB, pedal:pedals[side],
+    hip:anchors['hip'+side], bend:V3(1,.25,side*.06) });
+});
+[1,-1].forEach(side=>{
+  const uArm = makeLimbMesh(.088, MAT.feather, .6);
+  const fArm = makeLimbMesh(.06, MAT.feather2, .5);
+  const elbowB = jointBall(.07, MAT.feather);
+  const hand = new THREE.Group(); pelicanRoot.add(hand);
+  const wingColors = [MAT.feather, MAT.feather, MAT.feather2, MAT.feather2, MAT.feather3];
+  const handFeathers = [];
+  for (let i=0;i<5;i++){
+    const f = new THREE.Mesh(featherGeo(.3,.075,.14), wingColors[i]);
+    f.rotation.set(.12,0,(i-2)*.14); f.castShadow = true; hand.add(f); handFeathers.push(f);
+  }
+  /* 前臂上的覆羽 */
+  const cov = new THREE.Mesh(featherGeo(.4,.16,.2), MAT.feather);
+  cov.position.set(0,-.08,side*.05); cov.rotation.x = side*1.3; fArm.add(cov);
+  pelicanRoot.add(uArm, fArm, elbowB);
+  wings.push({ side, uArm, fArm, hand, handFeathers, elbowB,
+    shoulder:anchors['sh'+side], grip:gripAnchors[side], bend:V3(-.55,-.35,side*.5) });
+});
+
+/* 点击拾取球 */
+const hitSphere = new THREE.Mesh(new THREE.SphereGeometry(.9,8,6),
+  new THREE.MeshBasicMaterial({colorWrite:false, depthWrite:false, transparent:true}));
+hitSphere.position.set(.2,1.25,0); scene.add(hitSphere);
+
+/* 风线 */
+const windMat = new THREE.MeshBasicMaterial({color:'#fff2dd', transparent:true, opacity:0});
+const windLines = [];
+for (let i=0;i<8;i++){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(.55,.013,.013), windMat);
+  m.position.set(rand(-.8,1.8), rand(1.2,2.4), rand(-.9,.9));
+  windLines.push(m); scene.add(m);
+}
+
+/* ================= IK 与摆放 ================= */
+const _v1=V3(), _v2=V3(), _v3=V3(), _knee=V3(), _up=V3(0,1,0), _va=V3(), _vb=V3();
+function solveIK(hip, target, L1, L2, bend, out){
+  _v1.copy(target).sub(hip);
+  let dist = _v1.length();
+  const max = L1+L2-.002, min = Math.abs(L1-L2)+.002;
+  if (dist>max || dist<min){ _v1.multiplyScalar((M.clamp(dist,min,max))/(dist||1)); dist = M.clamp(dist,min,max); }
+  _v2.copy(_v1).normalize();
+  const cosA = M.clamp((L1*L1+dist*dist-L2*L2)/(2*L1*dist), -1, 1);
+  const a = Math.acos(cosA);
+  _v3.copy(bend).addScaledVector(_v2, -bend.dot(_v2));
+  if (_v3.lengthSq()<1e-6) _v3.set(0,1,0);
+  _v3.normalize();
+  out.copy(hip).addScaledVector(_v2, Math.cos(a)*L1).addScaledVector(_v3, Math.sin(a)*L1);
+  return out;
+}
+function placeLimb(mesh, a, b){
+  _va.copy(b).sub(a);
+  const len = Math.max(_va.length(), .01);
+  mesh.position.copy(a).addScaledVector(_va, .5);
+  mesh.scale.set(1, len, 1);
+  _va.normalize();
+  mesh.quaternion.setFromUnitVectors(_up, _va);
+}
+
+/* ================= 状态 ================= */
+const state = {
+  speed:3.6, targetSpeed:3.6, sprint:false, standT:0,
+  crank:.8, wheel:0, chainOff:0, steer:0, sceneRollX:0,
+  headYaw:0, headPitch:-.1, mouth:.02, mouthTarget:.02,
+  lookTimer:0, pouchPulse:0, headBounce:0, bellAnim:0, blink:0,
+  fish:{ phase:'hold', t:9, u:0, p0:V3() },
+};
+const keys = new Set();
+const pointer = { x:0, y:0 };
+
+/* ================= 相机预设 ================= */
+const PRESETS = [
+  { name:'逆光', pos:V3(-1.7,1.5,-6.8), tgt:V3(.2,1.35,0) },
+  { name:'侧跟', pos:V3(.2,1.75,6.6),   tgt:V3(.2,1.4,0) },
+  { name:'回望', pos:V3(2.8,1.9,.7),    tgt:V3(-1.2,1.5,0), eye:true },
+  { name:'贴地', pos:V3(1.7,.5,1.9),    tgt:V3(0,.8,0) },
+];
+let activePreset = 0;
+let camAnim = null;
+const easeIO = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+function flyCam(pos, tgt, dur){
+  camAnim = { t:0, dur, fp:camera.position.clone(), tp:pos, ft:controls.target.clone(), tt:tgt };
+  controls.enabled = false;
+}
+function applyPreset(i){
+  activePreset = i;
+  const p = PRESETS[i];
+  flyCam(p.pos, p.tgt, 1.25);
+  document.getElementById('btnCam').textContent = '机位 · ' + p.name;
+}
+flyCam(PRESETS[0].pos, PRESETS[0].tgt, 3.0); // 开场推入
+
+/* ================= 音频（程序合成） ================= */
+let AC = null;
+function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); return AC; }
+function ringBell(){
+  const a = ac(), t = a.currentTime;
+  [[2280,0],[2680,.09]].forEach(([f,d])=>{
+    const o=a.createOscillator(), o2=a.createOscillator(), g=a.createGain(), g2=a.createGain();
+    o.type='sine'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*2.01;
+    g2.gain.value=.35; o2.connect(g2); g2.connect(g);
+    g.gain.setValueAtTime(.0001,t+d);
+    g.gain.exponentialRampToValueAtTime(.4,t+d+.008);
+    g.gain.exponentialRampToValueAtTime(.0001,t+d+.5);
+    o.connect(g); g.connect(a.destination);
+    o.start(t+d); o.stop(t+d+.55); o2.start(t+d); o2.stop(t+d+.55);
+  });
+  state.bellAnim = 1;
+}
+function screech(){
+  const a = ac(), t = a.currentTime;
+  for (let k=0;k<2;k++){
+    const d = t+k*.24;
+    const o=a.createOscillator(); o.type='sawtooth';
+    o.frequency.setValueAtTime(850,d); o.frequency.exponentialRampToValueAtTime(420,d+.3);
+    const lfo=a.createOscillator(); lfo.frequency.value=27;
+    const lg=a.createGain(); lg.gain.value=55; lfo.connect(lg); lg.connect(o.frequency);
+    const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=880; bp.Q.value=2.2;
+    const g=a.createGain();
+    g.gain.setValueAtTime(.0001,d); g.gain.exponentialRampToValueAtTime(.14,d+.03);
+    g.gain.exponentialRampToValueAtTime(.0001,d+.32);
+    o.connect(bp); bp.connect(g); g.connect(a.destination);
+    o.start(d); o.stop(d+.35); lfo.start(d); lfo.stop(d+.35);
+  }
+}
+function startAmbience(){
+  if (ac().ambience) return; AC.ambience = true;
+  const a = AC;
+  const len = a.sampleRate*3, buf = a.createBuffer(1, len, a.sampleRate);
+  const ch = buf.getChannelData(0);
+  for (let i=0;i<len;i++) ch[i] = (Math.random()*2-1)*.5;
+  const src = a.createBufferSource(); src.buffer = buf; src.loop = true;
+  const lp = a.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = 420;
+  const g = a.createGain(); g.gain.value = .045;
+  const lfo = a.createOscillator(); lfo.frequency.value = .13;
+  const lg = a.createGain(); lg.gain.value = .02; lfo.connect(lg); lg.connect(g.gain);
+  src.connect(lp); lp.connect(g); g.connect(a.destination);
+  src.start(); lfo.start();
+}
+
+/* ================= 交互 ================= */
+addEventListener('keydown', e=>{
+  if (['ArrowUp','ArrowDown','Space','KeyW','KeyS'].includes(e.code)) e.preventDefault();
+  if (e.repeat) return;
+  keys.add(e.code);
+  if (e.code==='Space') state.sprint = true;
+  if (e.code==='KeyB'){ ringBell(); }
+  if (e.code==='KeyC'){ applyPreset((activePreset+1)%PRESETS.length); }
+  const d = ['Digit1','Digit2','Digit3','Digit4'].indexOf(e.code);
+  if (d>=0) applyPreset(d);
+  ac(); startAmbience();
+});
+addEventListener('keyup', e=>{
+  keys.delete(e.code);
+  if (e.code==='Space') state.sprint = false;
+});
+addEventListener('pointermove', e=>{
+  pointer.x = (e.clientX/innerWidth)*2-1;
+  pointer.y = -((e.clientY/innerHeight)*2-1);
+});
+const raycaster = new THREE.Raycaster();
+let downPos = null;
+renderer.domElement.addEventListener('pointerdown', e=>{
+  downPos = [e.clientX, e.clientY, performance.now()];
+  ac(); startAmbience();
+});
+renderer.domElement.addEventListener('pointerup', e=>{
+  if (!downPos) return;
+  const dx = e.clientX-downPos[0], dy = e.clientY-downPos[1];
+  if (Math.hypot(dx,dy)<7 && performance.now()-downPos[2]<600){
+    raycaster.setFromCamera(new THREE.Vector2((e.clientX/innerWidth)*2-1, -((e.clientY/innerHeight)*2-1)), camera);
+    if (raycaster.intersectObject(hitSphere).length){
+      screech(); state.lookTimer = 2.6; state.pouchPulse = 1; state.mouthTarget = .55;
+    }
+  }
+  downPos = null;
+});
+document.getElementById('btnCam').addEventListener('click', ()=>applyPreset((activePreset+1)%PRESETS.length));
+const btnSprint = document.getElementById('btnSprint');
+['pointerdown'].forEach(ev=>btnSprint.addEventListener(ev, e=>{ e.preventDefault(); state.sprint=true; btnSprint.classList.add('hold'); ac(); startAmbience(); }));
+['pointerup','pointerleave','pointercancel'].forEach(ev=>btnSprint.addEventListener(ev, ()=>{ state.sprint=false; btnSprint.classList.remove('hold'); }));
+document.getElementById('btnBell').addEventListener('click', ()=>{ ringBell(); ac(); startAmbience(); });
+setTimeout(()=>document.getElementById('hint').classList.add('dim'), 12000);
+
+/* ================= 主循环 ================= */
+const clock = new THREE.Clock();
+let t = 0, hudT = 0;
+const speedEl = document.getElementById('speedVal'), labelEl = document.getElementById('speedLabel');
+const camRight = V3(), camUpv = V3(), lookTarget = V3(), headPos = V3(), neckBase = V3();
+const c0=V3(), c1=V3(), c2=V3(), c3=V3(), pv=V3(), tv=V3(), nv=V3();
+
+function tick(){
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), .05);
+  t += dt;
+
+  /* --- 车速 --- */
+  if (state.sprint) state.targetSpeed = 12;
+  else {
+    if (keys.has('KeyW')||keys.has('ArrowUp')) state.targetSpeed = Math.min(state.targetSpeed+2.2*dt, 9.2);
+    if (keys.has('KeyS')||keys.has('ArrowDown')) state.targetSpeed = Math.max(state.targetSpeed-3.4*dt, 0);
+  }
+  if (!state.sprint) state.targetSpeed = Math.min(state.targetSpeed, 9.2);
+  const k = 1-Math.exp(-1.4*dt);
+  state.speed += (state.targetSpeed-state.speed)*k;
+  const spd = state.speed, spdR = M.clamp(spd/9, 0, 1);
+  const braking = (keys.has('KeyS')||keys.has('ArrowDown')) && spd>.4;
+  state.standT += ((state.sprint?1:0)-state.standT)*Math.min(1, dt*5);
+  const stand = state.standT;
+
+  /* --- 车轮 / 曲柄 --- */
+  const wheelW = spd/.5;
+  state.wheel -= wheelW*dt;
+  rearWheel.rotation.z = state.wheel; frontWheel.rotation.z = state.wheel;
+  state.crank -= (wheelW/2.3)*dt;
+  crankGroup.rotation.z = state.crank;
+  pedals[1].rotation.z = -state.crank; pedals[-1].rotation.z = -state.crank;
+
+  /* --- 躯干律动（双倍频起伏 + 交替重心） --- */
+  const ph = state.crank;
+  const pedalLoad = M.clamp(spd/4, 0, 1);
+  const roll = Math.sin(ph)*(0.038+0.05*stand) + Math.sin(t*.9)*.008;
+  const bob = Math.sin(2*ph)*.02*pedalLoad*(1-stand*.6);
+  const pitch = .78 + spdR*.1 + stand*.28;
+  torso.position.set(-.24+.24*stand, 1.305+.03*stand+bob+Math.sin(t*1.4)*.004, 0);
+  torso.rotation.set(roll, 0, -pitch, 'ZXY');
+
+  /* --- 转向与整车微倾 --- */
+  state.steer = Math.sin(t*.6)*.02*(.4+spdR) - roll*2.1*stand;
+  steerInner.rotation.y = state.steer;
+  state.sceneRollX += (-(roll*.45+state.steer*.35) - state.sceneRollX)*Math.min(1, dt*6);
+  sceneRoll.rotation.x = state.sceneRollX;
+
+  /* --- 腿部 IK：髋 → 踏板 --- */
+  const L1=0.51, L2=0.48;
+  for (const leg of legs){
+    leg.pedal.getWorldPosition(pv);
+    pv.add(_va.set(-.01,.06,0)); // 踝在踏板后上
+    leg.hip.getWorldPosition(tv);
+    solveIK(tv, pv, L1, L2, leg.bend, _knee);
+    placeLimb(leg.thigh, tv, _knee);
+    placeLimb(leg.shin, _knee, pv);
+    leg.kneeB.position.copy(_knee);
+    leg.ankleB.position.copy(tv.set(0,0,0).copy(pv));
+    leg.foot.position.set(pv.x+.07, pv.y-.038, pv.z);
+    leg.foot.rotation.set(0,0,-.42+.13*Math.cos(ph+(leg.side>0?0:Math.PI)));
+  }
+
+  /* --- 翅膀 IK：肩 → 车把 --- */
+  for (const w of wings){
+    w.shoulder.getWorldPosition(tv);
+    w.grip.getWorldPosition(pv); pv.y += .02;
+    solveIK(tv, pv, .42, .5, w.bend, _knee);
+    placeLimb(w.uArm, tv, _knee);
+    placeLimb(w.fArm, _knee, pv);
+    w.elbowB.position.copy(_knee);
+    w.hand.position.copy(pv);
+    w.hand.quaternion.copy(w.fArm.quaternion);
+    const spread = .5+stand*.9;
+    w.handFeathers.forEach((f,i)=>{ f.rotation.z = (i-2)*.14*spread; });
+  }
+
+  /* --- 头部：稳定 + 看向鼠标 / 相机 --- */
+  neckBaseAnchor.getWorldPosition(neckBase);
+  headPos.set(
+    neckBase.x + .40 + .14*stand + .03*Math.sin(t*1.3),
+    neckBase.y + .32 - .10*stand + .012*Math.sin(t*1.3) - bob*.5,
+    0);
+  headGroup.position.copy(headPos);
+  camera.updateMatrixWorld();
+  camRight.setFromMatrixColumn(camera.matrixWorld, 0);
+  camUpv.setFromMatrixColumn(camera.matrixWorld, 1);
+  const fishS = state.fish;
+  let tossPitch = 0;
+  if (fishS.phase==='wind') tossPitch = .5*(fishS.t/.18);
+  else if (fishS.phase==='fly') tossPitch = .5*(1-Math.min(fishS.u,1));
+  if (state.lookTimer>0 || PRESETS[activePreset].eye){
+    lookTarget.copy(camera.position);
+  } else {
+    lookTarget.copy(camera.position).addScaledVector(camRight, -pointer.x*2.0).addScaledVector(camUpv, pointer.y*1.4);
+  }
+  nv.copy(lookTarget).sub(headPos);
+  if (nv.lengthSq()>1e-6){
+    const ty = M.clamp(Math.atan2(-nv.z, nv.x), -.6, .6);
+    const tp = M.clamp(Math.atan2(nv.y, Math.hypot(nv.x, nv.z)), -.4, .55);
+    state.headYaw += (ty-state.headYaw)*Math.min(1, dt*6);
+    state.headPitch += (tp-state.headPitch)*Math.min(1, dt*6);
+  }
+  state.lookTimer = Math.max(0, state.lookTimer-dt);
+  state.headBounce = Math.max(0, state.headBounce-dt*2.5);
+  headGroup.rotation.set(
+    -roll*.85,
+    state.headYaw,
+    state.headPitch-.1+tossPitch+state.headBounce*.18*Math.sin(t*30)+Math.sin(t*1.3)*.015,
+    'YZX');
+
+  /* --- 脖子几何重建 --- */
+  c0.copy(neckBase);
+  c1.copy(neckBase).add(_va.set(.13,.18,0));
+  c2.copy(headPos).add(_va.set(-.16,-.1,0));
+  c3.copy(headPos).add(_va.set(-.05,-.03,0));
+  const pos = neckGeo.attributes.position;
+  const breathe = .004*Math.sin(t*1.3);
+  const upRef = _v1.set(.35,.85,.4);
+  for (let i=0;i<=NECK.TUB;i++){
+    const u = i/NECK.TUB;
+    catmull(pv, c0,c1,c2,c3, u);
+    catmull(tv, c0,c1,c2,c3, Math.min(u+.02,1));
+    nv.copy(tv).sub(pv).normalize();
+    const upv = _v3.copy(upRef).addScaledVector(nv, -upRef.dot(nv));
+    if (upv.lengthSq()<1e-5) upv.set(1,0,0);
+    upv.normalize();
+    _v2.crossVectors(nv, upv);
+    const r = .088-.026*M.smoothstep(u,.5,1)+breathe;
+    for (let j=0;j<=NECK.RAD;j++){
+      const a = j/NECK.RAD*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a);
+      const o = (i*(NECK.RAD+1)+j)*3;
+      pos.array[o]   = pv.x + (upv.x*ca+_v2.x*sa)*r;
+      pos.array[o+1] = pv.y + (upv.y*ca+_v2.y*sa)*r;
+      pos.array[o+2] = pv.z + (upv.z*ca+_v2.z*sa)*r;
+    }
+  }
+  pos.needsUpdate = true;
+
+  /* --- 嘴 / 喉囊 / 羽冠 / 尾羽 --- */
+  if (fishS.phase==='wind'||fishS.phase==='fly') state.mouthTarget = .6;
+  else if (PRESETS[activePreset].eye) state.mouthTarget = .22;
+  else if (state.lookTimer>0) state.mouthTarget = .5;
+  else state.mouthTarget = .02;
+  state.mouth += (state.mouthTarget-state.mouth)*Math.min(1, dt*10);
+  headGroup.userData.jaw.rotation.z = -state.mouth*.55;
+  state.pouchPulse = Math.max(0, state.pouchPulse-dt*1.4);
+  const breathF = 1.5+spdR*2.5, breathA = .5*(1-spdR*.55)+state.pouchPulse;
+  const pb = Math.sin(t*breathF)*.05*breathA + state.pouchPulse*.4;
+  pouchMesh.scale.set(.16*(1+pb), .075*(1+pb*1.6), .105*(1+pb));
+  crest.forEach((f,i)=>{ f.rotation.z = Math.PI-.22+Math.sin(t*5+i)*.04; });
+  tailGroup.rotation.z = Math.sin(t*2.3)*.05 + bob*2;
+
+  /* --- 抛鱼接鱼 --- */
+  if (fishS.phase==='hold'){
+    fishS.t -= dt;
+    if (fishS.t<0 && !state.sprint && spd>.5){ fishS.phase='wind'; fishS.t=0; }
+  } else if (fishS.phase==='wind'){
+    fishS.t += dt;
+    if (fishS.t>=.18){
+      fishS.phase='fly'; fishS.u=0;
+      jawAnchor.getWorldPosition(fishS.p0);
+      pelicanRoot.attach(fish);
+    }
+  } else if (fishS.phase==='fly'){
+    fishS.u += dt/.55;
+    const u = Math.min(fishS.u, 1);
+    jawAnchor.getWorldPosition(tv);
+    fish.position.lerpVectors(fishS.p0, tv, u);
+    fish.position.y += .95*4*u*(1-u);
+    fish.rotation.x += 6*dt; fish.rotation.z += 2.5*dt;
+    if (u>=1){
+      fishS.phase='gulp'; fishS.t=0;
+      headGroup.attach(fish);
+      fish.position.set(.30,-.11,.01); fish.rotation.set(0,0,.25);
+      state.pouchPulse = 1; state.headBounce = 1;
+    }
+  } else if (fishS.phase==='gulp'){
+    fishS.t += dt;
+    if (fishS.t>.6){ fishS.phase='hold'; fishS.t = 10+rand(0,10); }
+  }
+
+  /* --- 链条滚动 --- */
+  state.chainOff += (wheelW/2.3)*CHAIN.R1/CHAIN.P*dt;
+  {
+    const dummy = chainInst.dummy || (chainInst.dummy = new THREE.Object3D());
+    for (let i=0;i<26;i++){
+      chainPoint(i/26 + state.chainOff, dummy.position, _v1);
+      dummy.rotation.set(0,0,Math.atan2(_v1.y,_v1.x));
+      dummy.updateMatrix();
+      chainInst.setMatrixAt(i, dummy.matrix);
+    }
+    chainInst.instanceMatrix.needsUpdate = true;
+  }
+
+  /* --- 刹车灯 / 车铃抖动 --- */
+  tailLampMat.emissiveIntensity = braking ? 2.0+Math.sin(t*14)*.8 : .2;
+  state.bellAnim = Math.max(0, state.bellAnim-dt*3);
+  if (steerInner.userData.bellCap)
+    steerInner.userData.bellCap.rotation.z = Math.sin(t*45)*.25*state.bellAnim;
+
+  /* --- 环境滚动 / 云 / 海鸥 / 风线 --- */
+  for (const s of scrollers){
+    s.obj.position.x -= spd*dt;
+    if (s.obj.position.x < -s.cycle/2){
+      s.obj.position.x += s.cycle;
+      if (s.obj.position.z < -4 && s.obj.position.z > -14) s.obj.position.y = duneH(s.obj.position.x, s.obj.position.z)-.05;
+    }
+  }
+  for (const c of clouds){
+    c.position.x -= c.userData.sp*dt;
+    if (c.position.x < -150) c.position.x = 150;
+  }
+  for (const g of gulls){
+    const u = g.userData;
+    u.a += u.sp*dt;
+    g.position.set(20+Math.cos(u.a)*u.r, u.cy+Math.sin(u.a*2)*.8, 55+Math.sin(u.a)*u.r);
+    _v1.set(20+Math.cos(u.a+.05)*u.r, g.position.y, 55+Math.sin(u.a+.05)*u.r);
+    g.lookAt(_v1);
+    const flap = Math.sin(t*7+u.ph)*.55;
+    u.wl.rotation.z = flap; u.wr.rotation.z = -flap;
+  }
+  windMat.opacity = M.clamp((spd-3.2)/4.5, 0, .3);
+  if (windMat.opacity>.01) for (const w of windLines){
+    w.position.x -= (spd*1.6+1.5)*dt;
+    if (w.position.x < -1.8){
+      w.position.set(1.2+rand(0,.9), rand(1.1,2.5), rand(-.9,.9));
+    }
+  }
+
+  /* --- 眨眼 --- */
+  state.blink = (state.blink+dt)%3.7;
+  const eyeS = state.blink<.13 ? .12 : 1;
+  eyes.forEach(e=>{ e.scale.y = eyeS; });
+
+  /* --- shader uniforms --- */
+  seaMat.uniforms.uTime.value = t;
+  seaMat.uniforms.uCam.value.copy(camera.position);
+
+  /* --- 相机动画 / 控制 --- */
+  if (camAnim){
+    camAnim.t += dt;
+    const kk = easeIO(Math.min(camAnim.t/camAnim.dur, 1));
+    camera.position.lerpVectors(camAnim.fp, camAnim.tp, kk);
+    controls.target.lerpVectors(camAnim.ft, camAnim.tt, kk);
+    camera.lookAt(controls.target);
+    if (camAnim.t >= camAnim.dur){ camAnim = null; controls.enabled = true; }
+  } else controls.update();
+
+  /* --- HUD --- */
+  hudT += dt;
+  if (hudT > .12){
+    hudT = 0;
+    const kmh = Math.round(spd*3.6);
+    speedEl.textContent = kmh;
+    labelEl.textContent = kmh<1 ? '停 歇' : kmh<13 ? '慢 悠' : kmh<26 ? '巡 航' : kmh<39 ? '疾 驰' : '冲 刺';
+  }
+
+  renderer.render(scene, camera);
+}
+renderer.domElement.classList.add('on');
+tick();
+
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
