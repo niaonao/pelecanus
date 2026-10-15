@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>程序化生成：鹈鹕骑自行车</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            text-align: center;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+        }
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            color: #555;
+            font-family: sans-serif;
+            pointer-events: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">程序化 3D 场景：鹈鹕骑自行车</div>
+    <div id="controls">鼠标左键拖拽旋转视角 • 滚轮缩放</div>
+
+    <!-- 引入 Three.js 和 OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==========================================
+        // 1. 场景基础设置
+        // ==========================================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 40, 150);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.set(12, 8, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 3, 0);
+        controls.enablePan = false;
+        controls.minDistance = 5;
+        controls.maxDistance = 40;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // 防止视角穿入地下
+
+        // 灯光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(20, 30, -20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -30;
+        dirLight.shadow.camera.right = 30;
+        dirLight.shadow.camera.top = 30;
+        dirLight.shadow.camera.bottom = -30;
+        scene.add(dirLight);
+
+        // ==========================================
+        // 2. 程序化环境与地面
+        // ==========================================
+        const groundGeo = new THREE.PlaneGeometry(300, 400);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x55aa55, roughness: 1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const pathGeo = new THREE.PlaneGeometry(12, 400);
+        const pathMat = new THREE.MeshStandardMaterial({ color: 0xaa8866, roughness: 1 });
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.y = 0.01;
+        path.receiveShadow = true;
+        scene.add(path);
+
+        // 路面虚线 (用于体现速度感)
+        const dashesGroup = new THREE.Group();
+        scene.add(dashesGroup);
+        const dashGeo = new THREE.PlaneGeometry(0.4, 2);
+        const dashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        for (let i = 0; i < 60; i++) {
+            const dash = new THREE.Mesh(dashGeo, dashMat);
+            dash.rotation.x = -Math.PI / 2;
+            dash.position.set(0, 0.02, -150 + i * 5);
+            dashesGroup.add(dash);
+        }
+
+        // 树木
+        const trees = [];
+        const treeGeo = new THREE.ConeGeometry(2, 6, 8);
+        treeGeo.translate(0, 3, 0);
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x228822, roughness: 0.9 });
+        const trunkGeo = new THREE.CylinderGeometry(0.4, 0.4, 2);
+        trunkGeo.translate(0, 1, 0);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 1 });
+
+        for (let i = 0; i < 40; i++) {
+            const tree = new THREE.Group();
+            const leaves = new THREE.Mesh(treeGeo, treeMat);
+            leaves.castShadow = true;
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.castShadow = true;
+            tree.add(trunk);
+            tree.add(leaves);
+            tree.position.z = -150 + Math.random() * 180;
+            tree.position.x = (Math.random() > 0.5 ? 1 : -1) * (8 + Math.random() * 25);
+            scene.add(tree);
+            trees.push(tree);
+        }
+
+        // ==========================================
+        // 3. 构建自行车 (停留在原点，环境向后移动)
+        // ==========================================
+        const bikeGroup = new THREE.Group();
+        scene.add(bikeGroup);
+
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x0055ff, metalness: 0.4, roughness: 0.2 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.7, roughness: 0.3 });
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
+
+        // 车轮
+        const wheelRadius = 1.5;
+        const tireGeo = new THREE.TorusGeometry(wheelRadius, 0.15, 16, 48);
+        const frontWheel = new THREE.Mesh(tireGeo, blackMat);
+        frontWheel.rotation.y = Math.PI / 2; // 对齐 YZ 平面
+        frontWheel.position.set(0, 1.5, -3);
+        frontWheel.castShadow = true;
+        bikeGroup.add(frontWheel);
+
+        const rearWheel = new THREE.Mesh(tireGeo, blackMat);
+        rearWheel.rotation.y = Math.PI / 2;
+        rearWheel.position.set(0, 1.5, 3);
+        rearWheel.castShadow = true;
+        bikeGroup.add(rearWheel);
+
+        // 轮毂与辐条
+        [frontWheel, rearWheel].forEach(wheel => {
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4, 16), metalMat);
+            hub.rotation.z = Math.PI / 2;
+            wheel.add(hub);
+            for(let i=0; i<6; i++) {
+                const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 3, 4), metalMat);
+                spoke.rotation.z = (i * Math.PI) / 6;
+                wheel.add(spoke);
+            }
+        });
+
+        // 车架
+        function createTube(p1, p2, thickness, mat) {
+            const dist = p1.distanceTo(p2);
+            const geo = new THREE.CylinderGeometry(thickness, thickness, dist, 8);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(p1).lerp(p2, 0.5);
+            mesh.lookAt(p2);
+            mesh.rotateX(Math.PI / 2);
+            mesh.castShadow = true;
+            bikeGroup.add(mesh);
+        }
+
+        const pBottom = new THREE.Vector3(0, 1.2, 0);
+        const pRear = new THREE.Vector3(0, 1.5, 3);
+        const pSeat = new THREE.Vector3(0, 3.5, 2);
+        const pFront = new THREE.Vector3(0, 1.5, -3);
+        const pHandle = new THREE.Vector3(0, 3.8, -2.5);
+
+        createTube(pBottom, pRear, 0.1, frameMat);
+        createTube(pBottom, pSeat, 0.1, frameMat);
+        createTube(pRear, pSeat, 0.1, frameMat);
+        createTube(pSeat, pHandle, 0.1, frameMat);
+        createTube(pBottom, pHandle, 0.1, frameMat);
+        createTube(new THREE.Vector3(0.3, 1.5, -3), new THREE.Vector3(0.3, 3.8, -2.5), 0.06, frameMat);
+        createTube(new THREE.Vector3(-0.3, 1.5, -3), new THREE.Vector3(-0.3, 3.8, -2.5), 0.06, frameMat);
+
+        // 车把与座椅
+        const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8), blackMat);
+        handlebar.rotation.z = Math.PI / 2;
+        handlebar.position.copy(pHandle);
+        bikeGroup.add(handlebar);
+
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 1.2), blackMat);
+        seat.position.copy(pSeat).add(new THREE.Vector3(0, 0.1, 0));
+        seat.castShadow = true;
+        bikeGroup.add(seat);
+
+        // 曲柄与踏板
+        const crankGroup = new THREE.Group();
+        crankGroup.position.copy(pBottom);
+        bikeGroup.add(crankGroup);
+
+        const crankArmGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.8, 8);
+        crankArmGeo.translate(0, 0.4, 0); // 底部为轴心
+
+        const crankR = new THREE.Mesh(crankArmGeo, metalMat);
+        crankR.position.set(0.4, 0, 0);
+        crankGroup.add(crankR);
+
+        const crankL = new THREE.Mesh(crankArmGeo, metalMat);
+        crankL.position.set(-0.4, 0, 0);
+        crankGroup.add(crankL);
+
+        const pedalGeo = new THREE.BoxGeometry(0.4, 0.1, 0.8);
+        const pedalR = new THREE.Mesh(pedalGeo, blackMat);
+        pedalR.position.set(0, 0.8, 0); // 位于曲柄末端
+        crankR.add(pedalR);
+
+        const pedalL = new THREE.Mesh(pedalGeo, blackMat);
+        pedalL.position.set(0, 0.8, 0);
+        crankL.add(pedalL);
+
+        // 齿轮与链条
+        const chainring = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 16), metalMat);
+        chainring.rotation.z = Math.PI / 2;
+        chainring.position.set(0.2, 1.2, 0);
+        bikeGroup.add(chainring);
+
+        const cog = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12), metalMat);
+        cog.rotation.z = Math.PI / 2;
+        cog.position.set(0.2, 1.5, 3);
+        bikeGroup.add(cog);
+
+        createTube(new THREE.Vector3(0.2, 1.7, 0), new THREE.Vector3(0.2, 1.65, 3), 0.02, metalMat);
+        createTube(new THREE.Vector3(0.2, 0.7, 0), new THREE.Vector3(0.2, 1.35, 3), 0.02, metalMat);
+
+        // ==========================================
+        // 4. 构建鹈鹕模型
+        // ==========================================
+        const pelicanGroup = new THREE.Group();
+        bikeGroup.add(pelicanGroup);
+
+        const featherMat = new THREE.MeshStandardMaterial({ color: 0xfdfdfd, roughness: 0.6 });
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0xff9900, roughness: 0.4 });
+
+        // 身体
+        const bodyGeo = new THREE.SphereGeometry(1.2, 32, 32);
+        bodyGeo.scale(1, 1.2, 1.5);
+        const body = new THREE.Mesh(bodyGeo, featherMat);
+        body.position.set(0, 4, 1.5);
+        body.castShadow = true;
+        pelicanGroup.add(body);
+
+        // 尾巴
+        const tailGeo = new THREE.ConeGeometry(0.8, 1.5, 16);
+        tailGeo.rotateX(-Math.PI / 3);
+        tailGeo.scale(1, 0.5, 1);
+        const tail = new THREE.Mesh(tailGeo, featherMat);
+        tail.position.set(0, 3.8, 3.2);
+        pelicanGroup.add(tail);
+
+        // 脖子 (使用自定义曲线)
+        class NeckCurve extends THREE.Curve {
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const x = 0;
+                const y = 4.5 + t * 2;
+                const z = 1.0 - t * 2.5 + Math.sin(t * Math.PI) * 1.5; // S型曲线
+                return optionalTarget.set(x, y, z);
+            }
+        }
+        const neckPath = new NeckCurve();
+        const neck = new THREE.Mesh(new THREE.TubeGeometry(neckPath, 20, 0.4, 12, false), featherMat);
+        neck.castShadow = true;
+        pelicanGroup.add(neck);
+
+        // 头部
+        const headGroup = new THREE.Group();
+        headGroup.position.copy(neckPath.getPoint(1));
+        pelicanGroup.add(headGroup);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), featherMat);
+        head.castShadow = true;
+        headGroup.add(head);
+
+        // 喙与喉囊
+        const beakTop = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.5, 16).rotateX(Math.PI / 2), skinMat);
+        beakTop.position.set(0, 0, -0.8);
+        headGroup.add(beakTop);
+
+        const pouch = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16).scale(0.5, 0.8, 1.5), skinMat);
+        pouch.position.set(0, -0.3, -0.6);
+        headGroup.add(pouch);
+
+        // 眼睛
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), eyeMat);
+        eyeR.position.set(0.3, 0.2, -0.3);
+        headGroup.add(eyeR);
+        const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), eyeMat);
+        eyeL.position.set(-0.3, 0.2, -0.3);
+        headGroup.add(eyeL);
+
+        // ==========================================
+        // 5. 四肢构建与 FABRIK 逆向运动学 (IK)
+        // ==========================================
+        
+        // 创建带有两级骨骼的肢体 (几何体沿 -Z 轴延伸，方便直接使用 lookAt)
+        function createLimb(l1, l2, thickness, color) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.6 });
+
+            const upperGeo = new THREE.CylinderGeometry(thickness, thickness, l1, 8);
+            upperGeo.translate(0, -l1 / 2, 0); // 轴心在顶部
+            upperGeo.rotateX(Math.PI / 2);     // 让骨骼沿 -Z 轴延伸
+            const upperMesh = new THREE.Mesh(upperGeo, mat);
+            upperMesh.castShadow = true;
+            group.add(upperMesh);
+
+            const joint = new THREE.Group();
+            joint.position.set(0, 0, -l1);
+            group.add(joint);
+
+            const lowerGeo = new THREE.CylinderGeometry(thickness * 0.8, thickness * 0.8, l2, 8);
+            lowerGeo.translate(0, -l2 / 2, 0);
+            lowerGeo.rotateX(Math.PI / 2);
+            const lowerMesh = new THREE.Mesh(lowerGeo, mat);
+            lowerMesh.castShadow = true;
+            joint.add(lowerMesh);
+
+            const end = new THREE.Group();
+            end.position.set(0, 0, -l2);
+            joint.add(end);
+
+            return { root: group, joint: joint, end: end, l1, l2 };
+        }
+
+        // FABRIK (Forward And Backward Reaching Inverse Kinematics) 算法
+        function solveFABRIK(points, lengths, target, maxIter = 15) {
+            const p = points.map(v => v.clone());
+            const root = p[0].clone();
+            const totalLength = lengths.reduce((a, b) => a + b, 0);
+
+            if (root.distanceTo(target) > totalLength) {
+                // 目标太远，完全伸直朝向目标
+                for (let i = 0; i < p.length - 1; i++) {
+                    const r = Math.max(p[i].distanceTo(target), 0.001);
+                    const lambda = lengths[i] / r;
+                    p[i + 1] = p[i].clone().lerp(target, lambda);
+                }
+            } else {
+                // 目标可达，进行迭代
+                for (let iter = 0; iter < maxIter; iter++) {
+                    // 向后传递 (从末端到根部)
+                    p[p.length - 1].copy(target);
+                    for (let i = p.length - 2; i >= 0; i--) {
+                        const r = Math.max(p[i].distanceTo(p[i + 1]), 0.001);
+                        const lambda = lengths[i] / r;
+                        p[i] = p[i + 1].clone().lerp(p[i], lambda);
+                    }
+                    // 向前传递 (从根部到末端)
+                    p[0].copy(root);
+                    for (let i = 0; i < p.length - 1; i++) {
+                        const r = Math.max(p[i].distanceTo(p[i + 1]), 0.001);
+                        const lambda = lengths[i] / r;
+                        p[i + 1] = p[i].clone().lerp(p[i + 1], lambda);
+                    }
+                }
+            }
+            return p;
+        }
+
+        // 更新 IK
+        function updateLimbIK(limb, targetWorldPos) {
+            const p0 = new THREE.Vector3();
+            const p1 = new THREE.Vector3();
+            const p2 = new THREE.Vector3();
+
+            limb.root.getWorldPosition(p0);
+            limb.joint.getWorldPosition(p1);
+            limb.end.getWorldPosition(p2);
+
+            const points = [p0, p1, p2];
+            const lengths = [limb.l1, limb.l2];
+            const newPoints = solveFABRIK(points, lengths, targetWorldPos);
+
+            // 利用 lookAt 将 -Z 轴指向计算出的骨骼点
+            limb.root.lookAt(newPoints[1]);
+            limb.joint.lookAt(newPoints[2]);
+        }
+
+        // 实例化手臂 (翅膀)
+        const armL1 = 1.8, armL2 = 1.8;
+        const shoulderR = createLimb(armL1, armL2, 0.25, 0xfdfdfd);
+        shoulderR.root.position.set(0.8, 4.5, 0.5);
+        pelicanGroup.add(shoulderR.root);
+
+        const shoulderL = createLimb(armL1, armL2, 0.25, 0xfdfdfd);
+        shoulderL.root.position.set(-0.8, 4.5, 0.5);
+        pelicanGroup.add(shoulderL.root);
+
+        // 实例化腿部
+        const legL1 = 2.2, legL2 = 2.2;
+        const hipR = createLimb(legL1, legL2, 0.3, 0xff9900);
+        hipR.root.position.set(0.6, 4.0, 1.0);
+        pelicanGroup.add(hipR.root);
+
+        const hipL = createLimb(legL1, legL2, 0.3, 0xff9900);
+        hipL.root.position.set(-0.6, 4.0, 1.0);
+        pelicanGroup.add(hipL.root);
+
+        // 将脚掌绑定在踏板上，以保证其始终水平
+        const footGeo = new THREE.BoxGeometry(0.5, 0.1, 0.9);
+        const footR = new THREE.Mesh(footGeo, skinMat);
+        footR.position.set(0, 0.05, 0);
+        pedalR.add(footR);
+
+        const footL = new THREE.Mesh(footGeo, skinMat);
+        footL.position.set(0, 0.05, 0);
+        pedalL.add(footL);
+
+        // ==========================================
+        // 6. 动画循环
+        // ==========================================
+        const clock = new THREE.Clock();
+        let crankAngle = 0;
+        let wheelRot = 0;
+        const speed = 5.0; // 基础运动速度
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // 旋转车轮
+            wheelRot -= delta * speed * 2.5;
+            frontWheel.rotation.z = wheelRot;
+            rearWheel.rotation.z = wheelRot;
+
+            // 旋转曲柄
+            crankAngle -= delta * speed;
+            crankR.rotation.x = crankAngle;
+            crankL.rotation.x = crankAngle + Math.PI;
+
+            // 保持踏板水平
+            pedalR.rotation.x = -crankAngle;
+            pedalL.rotation.x = -(crankAngle + Math.PI);
+
+            // 鹈鹕身体动态起伏 (模拟踩踏时的重心变化)
+            const bob = Math.sin(crankAngle * 2) * 0.1;
+            pelicanGroup.position.y = bob;
+            pelicanGroup.rotation.z = Math.sin(crankAngle) * 0.05; // 左右微倾
+            tail.rotation.y = Math.sin(Date.now() * 0.005) * 0.1; // 尾巴微摆
+
+            // 获取踏板世界坐标，并驱动腿部 IK
+            const targetR = new THREE.Vector3();
+            pedalR.getWorldPosition(targetR);
+            updateLimbIK(hipR, targetR);
+
+            const targetL = new THREE.Vector3();
+            pedalL.getWorldPosition(targetL);
+            updateLimbIK(hipL, targetL);
+
+            // 驱动手臂 IK 抓住车把 (车把固定在自行车坐标上)
+            const handleRPos = new THREE.Vector3(0.7, 3.8, -2.5).applyMatrix4(bikeGroup.matrixWorld);
+            updateLimbIK(shoulderR, handleRPos);
+
+            const handleLPos = new THREE.Vector3(-0.7, 3.8, -2.5).applyMatrix4(bikeGroup.matrixWorld);
+            updateLimbIK(shoulderL, handleLPos);
+
+            // 环境无限滚动 (模拟向前行驶)
+            const moveDist = speed * 2.5 * delta;
+
+            trees.forEach(tree => {
+                tree.position.z += moveDist;
+                if (tree.position.z > 20) {
+                    tree.position.z -= 180;
+                    tree.position.x = (Math.random() > 0.5 ? 1 : -1) * (8 + Math.random() * 25);
+                }
+            });
+
+            dashesGroup.children.forEach(dash => {
+                dash.position.z += moveDist;
+                if (dash.position.z > 20) dash.position.z -= 300;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

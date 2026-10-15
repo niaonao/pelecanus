@@ -2,7 +2,7 @@
 
 同一个提示词，不同大模型，会创造出怎样的 3D 世界？
 
-本仓库收录了 12 个由不同大模型生成的 Three.js 单文件作品。每个版本都围绕“一只鹈鹕正在骑自行车”展开，并尝试仅通过程序完成角色、自行车、环境、动画、灯光、摄像机与交互。
+本仓库收录了 16 个由不同大模型生成的 Three.js 单文件作品。每个版本都围绕“一只鹈鹕正在骑自行车”展开，并尝试仅通过程序完成角色、自行车、环境、动画、灯光、摄像机与交互。
 
 ![鹈鹕骑行 3D 作品对比](img/pelicans-riding-comparison.png)
 
@@ -44,10 +44,14 @@ Generate an SVG of a pelican riding a bicycle
 | GPT-5.6 Luna | [打开 HTML](html/GPT-5.6-Luna.html) |
 | GPT-5.6 Sol | [打开 HTML](html/GPT-5.6-Sol.html) |
 | GPT-6 Astra | [打开 HTML](html/GPT-6-Astra.html) · [观看录屏](screenrecord/GPT-6-Astra.mp4) |
+| GPT-6.1-Sol | [打开 HTML](html/GPT-6.1-Sol.html) |
+| Hy4-preview | [打开 HTML](html/Hy4-Preview.html) |
 | Kimi K3 | [打开 HTML](html/Kimi-K3.html) |
 | Qwen 3.8 Max | [打开 HTML](html/Qwen-3.8-Max.html) |
+| Space-Bunny-Alpha | [打开 HTML](html/Space-Bunny-Alpha.html) |
+| Step-5-Preview | [打开 HTML](html/Step-5-Preview.html) |
 
-> 这里展示的是各模型的原始生成结果，仓库不对作品进行排名。完整测评、对比与结论将另行发布。
+> 这里展示的是各模型的原始生成结果，仓库不对作品进行排名。相关说明与演示见文末链接。
 
 ## 快速体验
 
@@ -107,3 +111,16 @@ pelecanus/
 ## License
 
 本项目采用 [Apache License 2.0](LICENSE) 许可证。
+
+## 博客说明
+
+- [CSDN 博客](https://blog.csdn.net/niaonao/article/details/165008168)
+- [掘金文章](https://juejin.cn/post/7684937171811221513)
+
+## Bilibili 视频
+
+- [鹈鹕骑行 3D 演示](https://www.bilibili.com/video/BV11GYv6oEJG/)
+
+## 鹈鹕骑行案例来源
+
+- [Artificial Analysis：Generate an SVG of a pelican riding a bicycle](https://artificialanalysis.ai/microevals/generate-an-svg-of-a-pelican-riding-a-bicycle-1777416860523)
