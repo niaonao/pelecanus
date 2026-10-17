@@ -2,9 +2,13 @@
 
 同一个提示词，不同大模型，会创造出怎样的 3D 世界？
 
-本仓库收录了 16 个由不同大模型生成的 Three.js 单文件作品。每个版本都围绕“一只鹈鹕正在骑自行车”展开，并尝试仅通过程序完成角色、自行车、环境、动画、灯光、摄像机与交互。
+本仓库收录了 17 个由不同大模型及其版本生成的 Three.js 单文件作品。每个版本都围绕“一只鹈鹕正在骑自行车”展开，并尝试仅通过程序完成角色、自行车、环境、动画、灯光、摄像机与交互。
 
 ![鹈鹕骑行 3D 作品对比](img/pelicans-riding-comparison.png)
+
+1017 更新：新增 DeepSeek V4.1 Flash 1017 版本的鹈鹕骑行 3D 测试结果及作品对比图。
+
+![鹈鹕骑行 3D 作品对比（1017 更新）](img/pelicans-riding-comparison-1017.png)
 
 ## 从经典测试题到 3D 挑战
 
@@ -36,6 +40,7 @@ Generate an SVG of a pelican riding a bicycle
 | --- | --- |
 | Claude Sonnet 5 | [打开 HTML](html/Claude-Sonnet-5.html) |
 | DeepSeek V4.1 Flash | [打开 HTML](html/DeepSeek-V4.1-Flash.html) |
+| DeepSeek V4.1 Flash 1017 | [打开 HTML](html/DeepSeek-V4.1-Flash-1017.html) |
 | Gemini 3.1 Pro Preview | [打开 HTML](html/Gemini-3.1-Pro-Preview.html) |
 | Gemini 3.6 Flash | [打开 HTML](html/Gemini-3.6-Flash.html) |
 | Gemini 3.8 Flash | [打开 HTML](html/Gemini-3.8-Flash.html) |
