@@ -2,11 +2,13 @@
 
 同一个提示词，不同大模型，会创造出怎样的 3D 世界？
 
-本仓库收录了 18 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
+本仓库收录了 19 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
 
 ![鹈鹕骑行 3D 作品对比](img/pelicans-riding-comparison.png)
 
-最新更新（2026-10-22）：新增 Muse-Wonder，见下方作品列表。
+![大模型测评结果动态对比](img/gif.gif)
+
+最新更新（2026-10-24）：新增 Kimi K3.1 Pro，更新大模型测评结果对比图，见下方作品列表。
 
 ## 作品一览
 
@@ -22,10 +24,11 @@
 | GLM 5.3 Flash | [打开 HTML](html/GLM-5.3-Flash.html) |
 | GPT-5.6 Luna | [打开 HTML](html/GPT-5.6-Luna.html) |
 | GPT-5.6 Sol | [打开 HTML](html/GPT-5.6-Sol.html) |
-| GPT-6 Astra | [打开 HTML](html/GPT-6-Astra.html) · [观看录屏](screenrecord/GPT-6-Astra.mp4) |
+| GPT-6 Astra | [打开 HTML](html/GPT-6-Astra.html) |
 | GPT-6.1-Sol | [打开 HTML](html/GPT-6.1-Sol.html) |
 | Hy4-preview | [打开 HTML](html/Hy4-Preview.html) |
 | Kimi K3 | [打开 HTML](html/Kimi-K3.html) |
+| Kimi K3.1 Pro | [打开 HTML](html/Kimi-K3.1-Pro.html) |
 | Muse-Wonder | [打开 HTML](html/Muse-Wonder.html) |
 | Qwen 3.8 Max | [打开 HTML](html/Qwen-3.8-Max.html) |
 | Space-Bunny-Alpha | [打开 HTML](html/Space-Bunny-Alpha.html) |
@@ -63,19 +66,13 @@ python -m http.server 8000
 - 视频演示：[Bilibili](https://www.bilibili.com/video/BV11GYv6oEJG/)
 - 经典测试题来源：[Artificial Analysis：Generate an SVG of a pelican riding a bicycle](https://artificialanalysis.ai/microevals/generate-an-svg-of-a-pelican-riding-a-bicycle-1777416860523)
 
-**AA 智能榜单参考（2026-10-21）**
+**AA 智能榜单参考（2026-10-24）**
 
-以下为 Artificial Analysis Intelligence Index 的 2026-10-21 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
+以下为 Artificial Analysis Intelligence Index 的 2026-10-24 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
 
-[![Artificial Analysis Intelligence Index（2026-10-21）](img/Artificial%20Analysis%20Intelligence%20Index%20%2821%20Oct%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
+[![Artificial Analysis Intelligence Index（2026-10-24）](img/Artificial%20Analysis%20Intelligence%20Index%20%2824%20Oct%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
 
 来源：[Artificial Analysis](https://artificialanalysis.ai/models#intelligence)。
-
-**历史对比图（2026-10-17）**
-
-新增 DeepSeek V4.1 Flash 1017 版本时的作品对比图。
-
-![鹈鹕骑行 3D 作品对比（1017 更新）](img/pelicans-riding-comparison-1017.png)
 
 ## 许可与说明
 
