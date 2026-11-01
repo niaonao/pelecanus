@@ -67,11 +67,11 @@ python -m http.server 8000
 - 视频演示：[Bilibili](https://www.bilibili.com/video/BV11GYv6oEJG/)
 - 经典测试题来源：[Artificial Analysis：Generate an SVG of a pelican riding a bicycle](https://artificialanalysis.ai/microevals/generate-an-svg-of-a-pelican-riding-a-bicycle-1777416860523)
 
-**AA 智能榜单参考（2026-10-24）**
+**AA 智能榜单参考（2026-11-01）**
 
-以下为 Artificial Analysis Intelligence Index 的 2026-10-24 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
+以下为 Artificial Analysis Intelligence Index 的 2026-11-01 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
 
-[![Artificial Analysis Intelligence Index（2026-10-24）](img/Artificial%20Analysis%20Intelligence%20Index%20%2824%20Oct%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
+[![Artificial Analysis Intelligence Index（2026-11-01）](img/Artificial%20Analysis%20Intelligence%20Index%20%281%20Nov%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
 
 来源：[Artificial Analysis](https://artificialanalysis.ai/models#intelligence)。
 
