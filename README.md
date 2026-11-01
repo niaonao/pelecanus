@@ -2,16 +2,19 @@
 
 同一个提示词，不同大模型，会创造出怎样的 3D 世界？
 
-本仓库收录了 19 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
+本仓库收录了 20 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
 
 ![大模型测评结果动态对比](img/gif.gif)
 
-最新更新（2026-10-24）：新增 Kimi K3.1 Pro，更新大模型测评结果对比图，见下方作品列表。
+![Claude Opus 5.5 鹈鹕骑行演示](img/opus5.5.gif)
+
+最新更新（2026-11-02）：新增 Claude Opus 5.5，见下方作品列表。
 
 ## 作品一览
 
 | 模型 | 查看作品 |
 | --- | --- |
+| Claude Opus 5.5 | [打开 HTML](html/Claude-Opus-5.5.html) |
 | Claude Sonnet 5 | [打开 HTML](html/Claude-Sonnet-5.html) |
 | DeepSeek V4.1 Flash | [打开 HTML](html/DeepSeek-V4.1-Flash.html) |
 | DeepSeek V4.1 Flash 1017 | [打开 HTML](html/DeepSeek-V4.1-Flash-1017.html) |
