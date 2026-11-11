@@ -2,18 +2,19 @@
 
 同一个提示词，不同大模型，会创造出怎样的 3D 世界？
 
-本仓库收录了 20 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
+本仓库收录了 21 个由不同大模型及其版本生成的 Three.js 单文件作品，围绕“一只鹈鹕正在骑自行车”，展示程序化建模、骑行动画和交互效果。保留模型原始输出，不对作品排名。
 
 ![大模型测评结果动态对比](img/gif.gif)
 
 ![Claude Opus 5.5 鹈鹕骑行演示](img/opus5.5.gif)
 
-最新更新（2026-11-02）：新增 Claude Opus 5.5，见下方作品列表。
+最新更新（2026-11-11）：新增 Claude Fable 5.2，见下方作品列表。
 
 ## 作品一览
 
 | 模型 | 查看作品 |
 | --- | --- |
+| Claude Fable 5.2 | [打开 HTML](html/Claude-Fable-5.2.html) |
 | Claude Opus 5.5 | [打开 HTML](html/Claude-Opus-5.5.html) |
 | Claude Sonnet 5 | [打开 HTML](html/Claude-Sonnet-5.html) |
 | DeepSeek V4.1 Flash | [打开 HTML](html/DeepSeek-V4.1-Flash.html) |
@@ -67,11 +68,11 @@ python -m http.server 8000
 - 视频演示：[Bilibili](https://www.bilibili.com/video/BV11GYv6oEJG/)
 - 经典测试题来源：[Artificial Analysis：Generate an SVG of a pelican riding a bicycle](https://artificialanalysis.ai/microevals/generate-an-svg-of-a-pelican-riding-a-bicycle-1777416860523)
 
-**AA 智能榜单参考（2026-11-01）**
+**AA 智能榜单参考（2026-11-11）**
 
-以下为 Artificial Analysis Intelligence Index 的 2026-11-01 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
+以下为 Artificial Analysis Intelligence Index 的 2026-11-11 榜单快照，图片定期手动更新。点击图片可查看最新交互榜单；该综合智能榜单供背景参考，不代表本仓库鹈鹕骑行作品的排名。
 
-[![Artificial Analysis Intelligence Index（2026-11-01）](img/Artificial%20Analysis%20Intelligence%20Index%20%281%20Nov%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
+[![Artificial Analysis Intelligence Index（2026-11-11）](img/Artificial%20Analysis%20Intelligence%20Index%20%2811%20Nov%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
 
 来源：[Artificial Analysis](https://artificialanalysis.ai/models#intelligence)。
 
