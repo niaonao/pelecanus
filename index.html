@@ -3,60 +3,1076 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Pelecanus — one prompt, multiple LLMs, different 3D worlds.">
-  <title>Pelecanus · AI 3D Gallery</title>
+  <meta name="description" content="Pelecanus — one prompt, multiple LLMs, different interactive 3D worlds. Explore the ongoing AI-generated art collection.">
+  <meta name="theme-color" content="#FAF9F5">
+  <link rel="icon" href="data:,">
+  <title>Pelecanus — One Prompt, Different 3D Worlds</title>
   <style>
-    :root{color-scheme:dark;--bg:#0b1020;--panel:#121a2b;--line:#26334b;--muted:#9aa8bd;--text:#edf3ff;--accent:#8bb7ff}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#1b3155 0,transparent 55%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
-    main{width:min(100% - 32px,1000px);margin:0 auto;padding:64px 0}
-    header{text-align:center;margin-bottom:42px}h1{font-size:clamp(2.4rem,7vw,4.4rem);line-height:1.05;margin:0 0 14px;letter-spacing:-.04em}
-    .lead{color:var(--muted);font-size:1.08rem}.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:24px}
-    .button{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:10px;color:var(--text);text-decoration:none;background:#17243a}
-    .button.primary{background:#315f9e;border-color:#4779bc}
-    h2{font-size:1.25rem;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-    .card{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:rgba(18,26,43,.88);color:var(--text);text-decoration:none;transition:border-color .15s,transform .15s}
-    .card:hover{border-color:var(--accent);transform:translateY(-2px)}.card small{display:block;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
-    footer{text-align:center;color:var(--muted);font-size:.9rem;margin-top:44px}footer a{color:var(--accent)}
+    :root {
+      color-scheme: light;
+      --ivory: #FAF9F5;
+      --paper: #F0EEE6;
+      --ink: #292927;
+      --muted: #6D6C65;
+      --line: #CFCDC3;
+      --blue: #5E7EDF;
+      --clay: #D97757;
+      --serif: "Iowan Old Style", Baskerville, "Palatino Linotype", "Noto Serif CJK SC", "Songti SC", serif;
+      --sans: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "Courier New", "Noto Sans Mono CJK SC", monospace;
+      --ease: cubic-bezier(.19, 1, .22, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+    body {
+      margin: 0;
+      min-width: 0;
+      background: var(--ivory);
+      color: var(--ink);
+      font: 16px/1.65 var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+    body, header, main, footer, section, div, figure { min-width: 0; }
+    img, canvas, iframe { display: block; max-width: 100%; }
+    img, canvas { width: 100%; height: 100%; object-fit: cover; }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: .22em; }
+    button, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    :focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+    ::selection { background: var(--blue); color: var(--ivory); }
+
+    .skip-link {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 50;
+      padding: 10px 16px;
+      background: var(--ink);
+      color: var(--ivory);
+      transform: translateY(-160%);
+      transition: transform 180ms ease-out;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .masthead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(250, 249, 245, .97);
+      border-bottom: 1px solid var(--line);
+      transition: transform 240ms var(--ease);
+    }
+    .masthead.is-hidden { transform: translateY(-105%); }
+    .masthead-inner {
+      width: min(100%, 1600px);
+      margin: 0 auto;
+      padding: 10px 20px 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      column-gap: 16px;
+    }
+    .brand {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      font: 600 25px/1 var(--serif);
+      letter-spacing: -.035em;
+      text-decoration: none;
+    }
+    .brand-mark { color: var(--clay); margin-right: 8px; }
+    .nav {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .nav a, .repo-link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      font: 12px/1.2 var(--mono);
+      letter-spacing: .025em;
+      text-transform: uppercase;
+      transition: color 180ms ease-out;
+    }
+    .nav a:hover, .repo-link:hover { color: var(--blue); }
+    .header-actions {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .language-toggle {
+      min-width: 52px;
+      min-height: 44px;
+      padding: 8px 4px;
+      border: 0;
+      border-bottom: 1px solid var(--ink);
+      border-radius: 0;
+      background: transparent;
+      font: 12px/1.2 var(--mono);
+      letter-spacing: .02em;
+      transition: color 180ms ease-out, border-color 180ms ease-out;
+    }
+    .language-toggle:hover { color: var(--blue); border-color: var(--blue); }
+    html[lang="zh-CN"] em { font-style: normal; }
+    html[lang="zh-CN"] .hero-tagline,
+    html[lang="zh-CN"] .section-heading { line-height: 1.12; letter-spacing: -.035em; }
+    html[lang="zh-CN"] .hero-copy p,
+    html[lang="zh-CN"] .section-lead,
+    html[lang="zh-CN"] .about-copy p { line-height: 1.8; }
+
+    .hero, .section-inner, .footer-inner {
+      width: min(100%, 1600px);
+      margin: 0 auto;
+    }
+    .hero { padding: 56px 20px 88px; }
+    .hero-kicker, .section-kicker {
+      margin: 0 0 24px;
+      font: 12px/1.5 var(--mono);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hero h1 {
+      margin: 0 0 40px -.055em;
+      font: 400 18vw/.82 var(--serif);
+      letter-spacing: -.075em;
+    }
+    .hero-intro { display: grid; gap: 32px; }
+    .hero-tagline {
+      margin: 0;
+      font: 400 11.5vw/1.02 var(--serif);
+      letter-spacing: -.045em;
+    }
+    .hero-tagline span { display: block; }
+    .hero-tagline em { color: var(--blue); font-weight: 400; }
+    .hero-copy { max-width: 38ch; align-self: end; }
+    .hero-copy p { margin: 0 0 24px; font-size: 17px; line-height: 1.65; }
+    .text-link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      font: 12px/1.3 var(--mono);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-bottom: 1px solid var(--ink);
+      transition: color 180ms ease-out, border-color 180ms ease-out;
+    }
+    .text-link:hover { color: var(--blue); border-color: var(--blue); }
+    .hero-art { margin: 48px 0 0; }
+    .art-frame {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+    .art-frame canvas { position: absolute; inset: 0; }
+    .art-frame img, .art-frame canvas, .stage-screen img { object-fit: contain; }
+    .motion-toggle {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      z-index: 2;
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid rgba(250, 249, 245, .65);
+      border-radius: 0;
+      background: rgba(41, 41, 39, .88);
+      color: var(--ivory);
+      font: 12px/1 var(--mono);
+      letter-spacing: .025em;
+      text-transform: uppercase;
+      transition: background 160ms ease-out, transform 160ms ease-out;
+    }
+    .motion-toggle:hover { background: var(--ink); transform: translateY(-2px); }
+    figcaption {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--muted);
+      font: 12px/1.6 var(--mono);
+      letter-spacing: .015em;
+    }
+    figcaption strong { color: var(--ink); font-weight: 400; }
+
+    .section { border-top: 1px solid var(--line); }
+    .section-inner { padding: 80px 20px; }
+    .section-heading {
+      margin: 0;
+      max-width: 1050px;
+      font: 400 12vw/1.02 var(--serif);
+      letter-spacing: -.045em;
+    }
+    .section-heading em { color: var(--clay); font-weight: 400; }
+    .section-lead { max-width: 55ch; margin: 28px 0 0; color: var(--muted); font-size: 17px; }
+
+    .concept-flow {
+      margin-top: 56px;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+    }
+    .concept-step { position: relative; padding: 28px 0; border-bottom: 1px solid var(--line); }
+    .concept-step:last-child { border-bottom: 0; }
+    .concept-step small {
+      display: block;
+      margin-bottom: 24px;
+      color: var(--muted);
+      font: 12px/1.4 var(--mono);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .concept-step strong { display: block; font: 400 36px/1.05 var(--serif); letter-spacing: -.025em; }
+    .concept-step p { margin: 12px 0 0; max-width: 30ch; color: var(--muted); }
+    .concept-note {
+      margin: 32px 0 0;
+      max-width: 70ch;
+      font: 400 23px/1.45 var(--serif);
+    }
+
+    .collection-head { margin-bottom: 48px; }
+    .collection-meta { margin: 20px 0 0; font: 12px/1.6 var(--mono); color: var(--muted); }
+    .gallery-browser { display: grid; gap: 40px; }
+    .stage { align-self: start; }
+    .stage-screen {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: var(--paper);
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+    }
+    .stage-screen img, .stage-screen iframe { width: 100%; height: 100%; border: 0; }
+    .stage-screen iframe { background: var(--paper); }
+    .stage-caption { padding: 16px 0 0; }
+    .stage-caption-top { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 8px 16px; }
+    .stage-model { margin: 0; font: 400 29px/1.15 var(--serif); letter-spacing: -.025em; }
+    .stage-title { margin: 6px 0 0; color: var(--muted); font: 12px/1.5 var(--mono); }
+    .stage-open { flex: 0 0 auto; }
+    .loader {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--paper);
+      color: var(--muted);
+      text-align: center;
+      font: 12px/1.6 var(--mono);
+    }
+    .work-index { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+    .work-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; border-bottom: 1px solid var(--line); }
+    .work-select {
+      min-width: 0;
+      min-height: 74px;
+      padding: 14px 12px 14px 0;
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 4px 8px;
+      align-content: center;
+      text-align: left;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      transition: background 180ms ease-out, padding-left 220ms var(--ease);
+    }
+    .work-select:hover { background: var(--paper); padding-left: 8px; }
+    .work-select[aria-pressed="true"] { background: var(--paper); padding-left: 8px; }
+    .work-number { grid-row: 1 / 3; color: var(--muted); font: 12px/1.5 var(--mono); padding-top: 3px; }
+    .work-name { min-width: 0; font: 400 20px/1.2 var(--serif); overflow-wrap: anywhere; }
+    .work-scene { min-width: 0; color: var(--muted); font: 12px/1.4 var(--mono); overflow-wrap: anywhere; }
+    .work-open {
+      min-width: 44px;
+      min-height: 44px;
+      align-self: center;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      font-size: 20px;
+      transition: color 180ms ease-out, transform 180ms ease-out;
+    }
+    .work-open:hover { color: var(--blue); transform: translate(2px, -2px); }
+
+    .worlds { background: var(--paper); }
+    .compare-controls {
+      margin-top: 48px;
+      display: grid;
+      gap: 24px;
+      align-items: end;
+    }
+    .select-field label {
+      display: block;
+      margin-bottom: 8px;
+      font: 12px/1.4 var(--mono);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .select-field select {
+      width: 100%;
+      min-height: 52px;
+      padding: 8px 36px 8px 0;
+      border: 0;
+      border-bottom: 1px solid var(--ink);
+      border-radius: 0;
+      background: transparent;
+      font: 400 23px/1.2 var(--serif);
+      cursor: pointer;
+    }
+    .primary-button, .secondary-button {
+      min-height: 52px;
+      padding: 12px 20px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      font: 12px/1.3 var(--mono);
+      letter-spacing: .035em;
+      text-transform: uppercase;
+      transition: background 180ms ease-out, color 180ms ease-out, transform 180ms ease-out;
+    }
+    .primary-button { background: var(--ink); color: var(--ivory); }
+    .primary-button:hover { background: var(--blue); border-color: var(--blue); transform: translateY(-2px); }
+    .secondary-button { background: transparent; color: var(--ink); }
+    .secondary-button:hover { background: var(--ink); color: var(--ivory); }
+    .comparison-note { margin: 20px 0 0; max-width: 65ch; color: var(--muted); font-size: 14px; }
+    .comparison-grid { margin-top: 40px; display: grid; gap: 40px; }
+    .world-panel { min-width: 0; }
+    .world-screen {
+      position: relative;
+      aspect-ratio: 4 / 3;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      overflow: hidden;
+      background: var(--ivory);
+    }
+    .world-screen iframe { width: 100%; height: 100%; border: 0; }
+    .world-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+    .world-empty strong { font: 400 28px/1.1 var(--serif); overflow-wrap: anywhere; }
+    .world-empty span { color: var(--muted); font: 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+    .world-caption { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 12px; }
+    .world-caption p { margin: 0; font: 12px/1.5 var(--mono); }
+    .comparison-actions { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+    .about-grid { display: grid; gap: 40px; margin-top: 56px; }
+    .about-statement { margin: 0; font: 400 32px/1.2 var(--serif); letter-spacing: -.025em; }
+    .about-copy { max-width: 58ch; }
+    .about-copy p { margin: 0 0 20px; }
+    .about-copy .quiet { color: var(--muted); font-size: 14px; }
+    .prompt-details { margin-top: 32px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+    .prompt-details summary {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      list-style: none;
+      font: 12px/1.4 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .prompt-details summary::-webkit-details-marker { display: none; }
+    .prompt-details summary::after { content: "+"; font-size: 22px; }
+    .prompt-details[open] summary::after { content: "−"; }
+    .prompt-details pre {
+      margin: 0;
+      padding: 0 0 24px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--muted);
+      font: 14px/1.8 var(--sans);
+    }
+
+    .footer { border-top: 1px solid var(--ink); }
+    .footer-inner { padding: 48px 20px 32px; }
+    .footer-brand { margin: 0; font: 400 17vw/.9 var(--serif); letter-spacing: -.07em; }
+    .footer-bottom { margin-top: 40px; display: grid; gap: 24px; }
+    .footer-description { margin: 0; max-width: 45ch; color: var(--muted); font-size: 14px; }
+    .footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    .footer-note { margin: 32px 0 0; font: 12px/1.6 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+    @media (min-width: 700px) {
+      .masthead-inner { padding: 0 32px; grid-template-columns: 1fr auto 1fr; }
+      .nav { grid-column: auto; grid-row: auto; border-top: 0; gap: 24px; justify-content: center; }
+      .header-actions { grid-column: auto; grid-row: auto; }
+      .hero { padding: 80px 32px 112px; }
+      .hero h1 { font-size: 14vw; margin-bottom: 56px; }
+      .hero-intro { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; }
+      .hero-tagline { grid-column: 1 / 9; font-size: 7.1vw; }
+      .hero-copy { grid-column: 9 / 13; padding-bottom: 8px; }
+      .hero-art { margin-top: 72px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; }
+      .hero-art .art-frame { grid-column: 2 / 13; }
+      .hero-art figcaption { grid-column: 2 / 13; grid-template-columns: 1fr auto; }
+      .section-inner { padding: 112px 32px; }
+      .section-heading { font-size: 7.4vw; }
+      .concept-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .concept-step { padding: 32px 28px; border-bottom: 0; border-right: 1px solid var(--line); }
+      .concept-step:first-child { padding-left: 0; }
+      .concept-step:last-child { border-right: 0; }
+      .concept-step strong { font-size: 42px; }
+      .collection-head { display: flex; align-items: end; justify-content: space-between; gap: 32px; }
+      .collection-meta { text-align: right; }
+      .stage-screen { aspect-ratio: 16 / 10; }
+      .compare-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 24px; }
+      .comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+      .about-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; }
+      .about-statement { grid-column: 1 / 7; font-size: 42px; }
+      .about-copy { grid-column: 8 / 13; }
+      .footer-inner { padding: 64px 32px 32px; }
+      .footer-brand { font-size: 13.2vw; }
+      .footer-bottom { grid-template-columns: 1fr auto; align-items: end; }
+      .footer-links { align-items: flex-end; }
+    }
+
+    @media (min-width: 1080px) {
+      .hero-tagline { grid-column: 1 / 8; font-size: 6.2vw; }
+      .hero-copy { grid-column: 10 / 13; }
+      .section-heading { font-size: 6.4vw; }
+      .gallery-browser { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px; }
+      .stage { grid-column: 1 / 9; position: sticky; top: 92px; }
+      .work-index { grid-column: 9 / 13; max-height: 680px; overflow-y: auto; scrollbar-color: var(--muted) var(--paper); }
+      .world-empty { padding: 28px; }
+      .world-empty strong { font-size: 38px; }
+    }
+
+    @media (min-width: 1500px) {
+      .hero h1 { font-size: 210px; }
+      .hero-tagline { font-size: 92px; }
+      .section-heading { font-size: 96px; }
+      .footer-brand { font-size: 198px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
   </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>🐦 Pelecanus</h1>
-    <div class="lead">One Prompt. Multiple LLMs. Different 3D Worlds.</div>
-    <p>Explore how different AI models turn the same creative challenge into 3D experiences.</p>
-    <nav class="actions">
-      <a class="button primary" href="#gallery">Explore the gallery</a>
-      <a class="button" href="https://github.com/niaonao/pelecanus">GitHub repository</a>
-    </nav>
-  </header>
-  <section id="gallery">
-    <h2>Model gallery</h2>
-    <div class="grid">
-      <a class="card" href="./html/Claude-Fable-5.2.html">Claude Fable 5.2<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Claude-Opus-5.5.html">Claude Opus 5.5<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Claude-Sonnet-5.html">Claude Sonnet 5<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/DeepSeek-V4.1-Flash-1017.html">DeepSeek V4.1 Flash 1017<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/DeepSeek-V4.1-Flash.html">DeepSeek V4.1 Flash<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GLM-5.3-Flash.html">GLM 5.3 Flash<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GLM-5.3.html">GLM 5.3<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GPT-5.6-Luna.html">GPT 5.6 Luna<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GPT-5.6-Sol.html">GPT 5.6 Sol<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GPT-6-Astra.html">GPT 6 Astra<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/GPT-6.1-Sol.html">GPT 6.1 Sol<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Gemini-3.1-Pro-Preview.html">Gemini 3.1 Pro Preview<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Gemini-3.6-Flash.html">Gemini 3.6 Flash<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Gemini-3.8-Flash.html">Gemini 3.8 Flash<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Hy4-Preview.html">Hy4 Preview<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Kimi-K3.1-Pro.html">Kimi K3.1 Pro<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Kimi-K3.html">Kimi K3<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Muse-Wonder.html">Muse Wonder<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Qwen-3.8-Max.html">Qwen 3.8 Max<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Space-Bunny-Alpha.html">Space Bunny Alpha<small>Open 3D experience ↗</small></a>
-      <a class="card" href="./html/Step-5-Preview.html">Step 5 Preview<small>Open 3D experience ↗</small></a>
+  <a class="skip-link" href="#main">Skip to the exhibition</a>
+  <header class="masthead" id="masthead">
+    <div class="masthead-inner">
+      <a class="brand" href="#top" aria-label="Pelecanus, back to top"><span class="brand-mark" aria-hidden="true">●</span>Pelecanus</a>
+      <nav class="nav" aria-label="Exhibition sections">
+        <a href="#concept">Concept</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#worlds">Worlds</a>
+        <a href="#about">About</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-toggle" id="language-toggle" type="button" aria-label="Switch to Chinese">中文</button>
+        <a class="repo-link" href="https://github.com/niaonao/pelecanus" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
     </div>
-  </section>
-  <footer>Pelecanus · AI-generated 3D creativity experiment<br><a href="https://github.com/niaonao/pelecanus">View source on GitHub</a></footer>
-</main>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <p class="hero-kicker">An ongoing exhibition of AI-generated 3D worlds</p>
+      <h1 id="hero-title">Pelecanus</h1>
+      <div class="hero-intro">
+        <p class="hero-tagline">
+          <span>One Prompt.</span>
+          <span>Multiple LLMs.</span>
+          <span><em>Different 3D Worlds.</em></span>
+        </p>
+        <div class="hero-copy">
+          <p>Explore how different AI models transform the same creative prompt into unique interactive 3D experiences.</p>
+          <a class="text-link" href="#gallery">Explore Gallery <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+      <figure class="hero-art">
+        <div class="art-frame">
+          <img id="hero-motion" src="./img/gif.gif" width="1945" height="1096" alt="Eight different AI-generated interpretations of a pelican riding a bicycle, shown in a multi-screen comparison" fetchpriority="high" decoding="async">
+          <canvas id="hero-motion-still" width="1945" height="1096" role="img" hidden></canvas>
+          <button class="motion-toggle" type="button" data-motion-target="hero-motion" aria-label="Pause hero GIF" disabled>Pause GIF</button>
+        </div>
+        <figcaption>
+          <span><strong>One brief, many visual languages.</strong> A recorded multi-model comparison from the project archive.</span>
+          <span>Moving image · 3D / Three.js</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="concept" aria-labelledby="concept-title">
+      <div class="section-inner">
+        <p class="section-kicker">The creative premise</p>
+        <h2 class="section-heading" id="concept-title">One brief.<br><em>No single answer.</em></h2>
+        <div class="concept-flow" aria-label="One prompt becomes multiple models and different worlds">
+          <div class="concept-step">
+            <small>The shared starting point</small>
+            <strong>One prompt</strong>
+            <p>A pelican riding a bicycle, modeled and animated entirely with Three.js.</p>
+          </div>
+          <div class="concept-step">
+            <small>The creative interpreters</small>
+            <strong>Multiple models</strong>
+            <p>Different language models approach the same spatial and motion challenge.</p>
+          </div>
+          <div class="concept-step">
+            <small>The resulting collection</small>
+            <strong>Different worlds</strong>
+            <p>Distinct scenes, visual rhythms, camera work, and ways to interact.</p>
+          </div>
+        </div>
+        <p class="concept-note">The prompt stays constant. Imagination does not.</p>
+      </div>
+    </section>
+
+    <section class="section" id="gallery" aria-labelledby="gallery-title">
+      <div class="section-inner">
+        <div class="collection-head">
+          <div>
+            <p class="section-kicker">The complete collection</p>
+            <h2 class="section-heading" id="gallery-title">The gallery</h2>
+          </div>
+          <p class="collection-meta"><span id="work-count">21 works</span> · <span class="collection-instruction">Select a work to preview</span></p>
+        </div>
+
+        <div class="gallery-browser">
+          <div class="stage">
+            <div class="stage-screen" id="gallery-screen">
+              <noscript>
+                <img src="./img/opus5.5.gif" width="1945" height="1096" loading="lazy" decoding="async" alt="Claude Opus 5.5's 3D pelican riding a bicycle through an autumn landscape">
+              </noscript>
+            </div>
+            <div class="stage-caption">
+              <div class="stage-caption-top">
+                <div aria-live="polite">
+                  <h3 class="stage-model" id="stage-model" tabindex="-1">Claude Opus 5.5</h3>
+                  <p class="stage-title" id="stage-title">Pelican on a Bicycle</p>
+                </div>
+                <a class="text-link stage-open" id="stage-open" href="https://niaonao.github.io/pelecanus/html/Claude-Opus-5.5.html" target="_blank" rel="noopener">Open work ↗</a>
+              </div>
+            </div>
+          </div>
+
+          <ol class="work-index" aria-label="All works">
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Claude Opus 5.5" data-title="Pelican on a Bicycle" aria-pressed="true"><span class="work-number">01</span><span class="work-name">Claude Opus 5.5</span><span class="work-scene">Pelican on a Bicycle</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Claude-Opus-5.5.html" target="_blank" rel="noopener" aria-label="Open Claude Opus 5.5 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Claude Fable 5.2" data-title="Pelican à vélo — a procedural Three.js scene" aria-pressed="false"><span class="work-number">02</span><span class="work-name">Claude Fable 5.2</span><span class="work-scene">Pelican à vélo</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Claude-Fable-5.2.html" target="_blank" rel="noopener" aria-label="Open Claude Fable 5.2 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Claude Sonnet 5" data-title="鹈鹕骑行记 · 一场海边的悠然骑行" aria-pressed="false"><span class="work-number">03</span><span class="work-name">Claude Sonnet 5</span><span class="work-scene">鹈鹕骑行记 · 一场海边的悠然骑行</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Claude-Sonnet-5.html" target="_blank" rel="noopener" aria-label="Open Claude Sonnet 5 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="DeepSeek V4.1 Flash 1017" data-title="Pelican Cruise — A Coastal Ride" aria-pressed="false"><span class="work-number">04</span><span class="work-name">DeepSeek V4.1 Flash 1017</span><span class="work-scene">Pelican Cruise — A Coastal Ride</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/DeepSeek-V4.1-Flash-1017.html" target="_blank" rel="noopener" aria-label="Open DeepSeek V4.1 Flash 1017 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="DeepSeek V4.1 Flash" data-title="鹈鹕骑自行车 · Pelican Cycling" aria-pressed="false"><span class="work-number">05</span><span class="work-name">DeepSeek V4.1 Flash</span><span class="work-scene">鹈鹕骑自行车 · Pelican Cycling</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/DeepSeek-V4.1-Flash.html" target="_blank" rel="noopener" aria-label="Open DeepSeek V4.1 Flash in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GLM 5.3 Flash" data-title="海岸骑行 · 鹈鹕先生" aria-pressed="false"><span class="work-number">06</span><span class="work-name">GLM 5.3 Flash</span><span class="work-scene">海岸骑行 · 鹈鹕先生</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GLM-5.3-Flash.html" target="_blank" rel="noopener" aria-label="Open GLM 5.3 Flash in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GLM 5.3" data-title="落日骑行 · 一只鹈鹕的黄金时刻" aria-pressed="false"><span class="work-number">07</span><span class="work-name">GLM 5.3</span><span class="work-scene">落日骑行 · 一只鹈鹕的黄金时刻</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GLM-5.3.html" target="_blank" rel="noopener" aria-label="Open GLM 5.3 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GPT-5.6 Luna" data-title="Three.js · Pelican Riding a Bicycle" aria-pressed="false"><span class="work-number">08</span><span class="work-name">GPT-5.6 Luna</span><span class="work-scene">Three.js · Pelican Riding a Bicycle</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GPT-5.6-Luna.html" target="_blank" rel="noopener" aria-label="Open GPT-5.6 Luna in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GPT-5.6 Sol" data-title="Pelican Cycle Club · Three.js" aria-pressed="false"><span class="work-number">09</span><span class="work-name">GPT-5.6 Sol</span><span class="work-scene">Pelican Cycle Club · Three.js</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GPT-5.6-Sol.html" target="_blank" rel="noopener" aria-label="Open GPT-5.6 Sol in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GPT-6 Astra" data-title="Pelican Coast — 慢一点，也很好" aria-pressed="false"><span class="work-number">10</span><span class="work-name">GPT-6 Astra</span><span class="work-scene">Pelican Coast — 慢一点，也很好</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GPT-6-Astra.html" target="_blank" rel="noopener" aria-label="Open GPT-6 Astra in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="GPT-6.1 Sol" data-title="顺风而行 · The Pelican Club" aria-pressed="false"><span class="work-number">11</span><span class="work-name">GPT-6.1 Sol</span><span class="work-scene">顺风而行 · The Pelican Club</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/GPT-6.1-Sol.html" target="_blank" rel="noopener" aria-label="Open GPT-6.1 Sol in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Gemini 3.1 Pro Preview" data-title="3D 鹈鹕骑自行车" aria-pressed="false"><span class="work-number">12</span><span class="work-name">Gemini 3.1 Pro Preview</span><span class="work-scene">3D 鹈鹕骑自行车</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Gemini-3.1-Pro-Preview.html" target="_blank" rel="noopener" aria-label="Open Gemini 3.1 Pro Preview in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Gemini 3.6 Flash" data-title="3D 鹈鹕骑自行车 — Three.js" aria-pressed="false"><span class="work-number">13</span><span class="work-name">Gemini 3.6 Flash</span><span class="work-scene">3D 鹈鹕骑自行车 — Three.js</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Gemini-3.6-Flash.html" target="_blank" rel="noopener" aria-label="Open Gemini 3.6 Flash in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Gemini 3.8 Flash" data-title="3D 鹈鹕骑行奇遇记 — Three.js" aria-pressed="false"><span class="work-number">14</span><span class="work-name">Gemini 3.8 Flash</span><span class="work-scene">3D 鹈鹕骑行奇遇记 — Three.js</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Gemini-3.8-Flash.html" target="_blank" rel="noopener" aria-label="Open Gemini 3.8 Flash in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Hy4 Preview" data-title="程序化生成：鹈鹕骑自行车" aria-pressed="false"><span class="work-number">15</span><span class="work-name">Hy4 Preview</span><span class="work-scene">程序化生成：鹈鹕骑自行车</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Hy4-Preview.html" target="_blank" rel="noopener" aria-label="Open Hy4 Preview in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Kimi K3.1 Pro" data-title="鹈鹕的海岸骑行 · Pelican Coast" aria-pressed="false"><span class="work-number">16</span><span class="work-name">Kimi K3.1 Pro</span><span class="work-scene">鹈鹕的海岸骑行 · Pelican Coast</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Kimi-K3.1-Pro.html" target="_blank" rel="noopener" aria-label="Open Kimi K3.1 Pro in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Kimi K3" data-title="鹈鹕环海骑行 · Pelican Seaside Ride" aria-pressed="false"><span class="work-number">17</span><span class="work-name">Kimi K3</span><span class="work-scene">鹈鹕环海骑行 · Pelican Seaside Ride</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Kimi-K3.html" target="_blank" rel="noopener" aria-label="Open Kimi K3 in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Muse Wonder" data-title="鹈鹕骑行 · Pelican Ride — Three.js 程序化 3D 场景" aria-pressed="false"><span class="work-number">18</span><span class="work-name">Muse Wonder</span><span class="work-scene">鹈鹕骑行 · Pelican Ride</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Muse-Wonder.html" target="_blank" rel="noopener" aria-label="Open Muse Wonder in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Qwen 3.8 Max" data-title="鹈鹕骑自行车 · Three.js" aria-pressed="false"><span class="work-number">19</span><span class="work-name">Qwen 3.8 Max</span><span class="work-scene">鹈鹕骑自行车 · Three.js</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Qwen-3.8-Max.html" target="_blank" rel="noopener" aria-label="Open Qwen 3.8 Max in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Space Bunny Alpha" data-title="鹈鹕单车 · Pelican Express" aria-pressed="false"><span class="work-number">20</span><span class="work-name">Space Bunny Alpha</span><span class="work-scene">鹈鹕单车 · Pelican Express</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Space-Bunny-Alpha.html" target="_blank" rel="noopener" aria-label="Open Space Bunny Alpha in a new tab">↗</a>
+            </li>
+            <li class="work-row">
+              <button class="work-select" type="button" data-model="Step 5 Preview" data-title="骑自行车的鹈鹕 · Pelican on a Bicycle · Three.js" aria-pressed="false"><span class="work-number">21</span><span class="work-name">Step 5 Preview</span><span class="work-scene">骑自行车的鹈鹕 · Pelican on a Bicycle</span></button>
+              <a class="work-open" href="https://niaonao.github.io/pelecanus/html/Step-5-Preview.html" target="_blank" rel="noopener" aria-label="Open Step 5 Preview in a new tab">↗</a>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section worlds" id="worlds" aria-labelledby="worlds-title">
+      <div class="section-inner">
+        <p class="section-kicker">A live visual comparison</p>
+        <h2 class="section-heading" id="worlds-title">Same bird.<br><em>Different worlds.</em></h2>
+        <p class="section-lead">Choose any two interpretations and place them side by side. Nothing loads until you ask it to.</p>
+
+        <div class="compare-controls">
+          <div class="select-field">
+            <label for="world-select-a">World A</label>
+            <select id="world-select-a" aria-label="Choose the first model"></select>
+          </div>
+          <div class="select-field">
+            <label for="world-select-b">World B</label>
+            <select id="world-select-b" aria-label="Choose the second model"></select>
+          </div>
+          <button class="primary-button" id="compare-button" type="button">Compare live worlds</button>
+        </div>
+        <p class="comparison-note">Compare the scenes’ visual style, motion, and interaction. The works require WebGL, and some load Three.js from a CDN.</p>
+
+        <div class="comparison-grid">
+          <article class="world-panel" aria-label="First selected world">
+            <div class="world-screen" id="world-screen-a">
+              <div class="world-empty"><strong>GPT-6 Astra</strong><span>Ready when you are</span></div>
+            </div>
+            <div class="world-caption">
+              <p id="world-caption-a">Pelican Coast — 慢一点，也很好</p>
+              <a class="text-link" id="world-open-a" href="https://niaonao.github.io/pelecanus/html/GPT-6-Astra.html" target="_blank" rel="noopener">Open A ↗</a>
+            </div>
+          </article>
+          <article class="world-panel" aria-label="Second selected world">
+            <div class="world-screen" id="world-screen-b">
+              <div class="world-empty"><strong>GLM 5.3</strong><span>Ready when you are</span></div>
+            </div>
+            <div class="world-caption">
+              <p id="world-caption-b">落日骑行 · 一只鹈鹕的黄金时刻</p>
+              <a class="text-link" id="world-open-b" href="https://niaonao.github.io/pelecanus/html/GLM-5.3.html" target="_blank" rel="noopener">Open B ↗</a>
+            </div>
+          </article>
+        </div>
+        <div class="comparison-actions">
+          <button class="secondary-button" id="unload-button" type="button" hidden>Unload live worlds</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about" aria-labelledby="about-title">
+      <div class="section-inner">
+        <p class="section-kicker">About the project</p>
+        <h2 class="section-heading" id="about-title">An open-ended<br><em>creative experiment.</em></h2>
+        <div class="about-grid">
+          <p class="about-statement">A collection of possible worlds.</p>
+          <div class="about-copy">
+            <p>Pelecanus is an ongoing exploration of AI creativity, where different language models turn prompts into immersive 3D experiences.</p>
+            <p>Each work preserves the model’s original output. Together, they make space for looking closely at visual expression, spatial construction, motion, and interaction—without declaring a winner.</p>
+            <p class="quiet">The original works remain independent, single-file Three.js experiences. Some load Three.js from a CDN and need an internet connection.</p>
+            <details class="prompt-details">
+              <summary>Read the original brief</summary>
+              <pre>使用 Three.js 创建一个精致、可交互的 3D 网页场景：一只鹈鹕正在骑自行车。
+
+鹈鹕、自行车、环境、动画、灯光、摄像机和交互均通过程序实现。鹈鹕需要真实地骑自行车，并具有协调的腿部、脚踏、车轮和身体运动。
+
+不要使用 SVG、2D Canvas、外部 3D 模型或预渲染动画。
+
+最终输出一个可以直接在现代浏览器中运行的完整 HTML 文件。</pre>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-brand">Pelecanus</p>
+      <div class="footer-bottom">
+        <p class="footer-description">An ongoing AI creative laboratory and interactive 3D art collection. One prompt, multiple models, different worlds.</p>
+        <div class="footer-links">
+          <a class="text-link" href="https://github.com/niaonao/pelecanus" target="_blank" rel="noopener">GitHub Repository ↗</a>
+          <a class="text-link" href="#gallery">Explore Gallery <span aria-hidden="true">↑</span></a>
+        </div>
+      </div>
+      <p class="footer-note">Original works remain untouched · Built for the open web</p>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      'use strict';
+
+      let currentLanguage = 'en';
+      const languageToggle = document.getElementById('language-toggle');
+      const originalChinesePrompt = document.querySelector('.prompt-details pre').textContent;
+      const englishPrompt = `Create a refined, interactive 3D web scene with Three.js: a pelican riding a bicycle.
+
+The pelican, bicycle, environment, animation, lighting, camera, and interactions must all be implemented programmatically. The pelican must genuinely ride the bicycle, with coordinated leg, pedal, wheel, and body motion.
+
+Do not use SVG, 2D Canvas, external 3D models, or pre-rendered animation.
+
+Deliver a complete HTML file that runs directly in a modern browser.`;
+
+      const dynamicCopy = {
+        en: {
+          playGif: 'Play GIF', pauseGif: 'Pause GIF',
+          playHero: 'Play hero GIF', pauseHero: 'Pause hero GIF',
+          loading: 'Loading live world…', ready: 'Ready when you are',
+          compare: 'Compare live worlds', reload: 'Reload comparison',
+          title: 'Pelecanus — One Prompt, Different 3D Worlds',
+          description: 'Pelecanus — one prompt, multiple LLMs, different interactive 3D worlds. Explore the ongoing AI-generated art collection.'
+        },
+        zh: {
+          playGif: '播放 GIF', pauseGif: '暂停 GIF',
+          playHero: '播放首屏 GIF', pauseHero: '暂停首屏 GIF',
+          loading: '正在加载实时世界…', ready: '准备就绪',
+          compare: '对照实时世界', reload: '重新加载对照',
+          title: 'Pelecanus — 一个提示词，不同的 3D 世界',
+          description: 'Pelecanus：一个提示词，多个大模型，不同的交互式 3D 世界。探索持续扩充的 AI 生成艺术收藏。'
+        }
+      };
+
+      const translationElements = [
+        ['.skip-link', '跳至展览内容'],
+        ['.nav a[href="#concept"]', '理念'],
+        ['.nav a[href="#gallery"]', '展馆'],
+        ['.nav a[href="#worlds"]', '对照'],
+        ['.nav a[href="#about"]', '关于'],
+        ['.hero-kicker', '一场持续进行的 AI 生成 3D 世界展览'],
+        ['.hero-tagline', '<span>一个提示词。</span><span>多个大模型。</span><span><em>不同的 3D 世界。</em></span>'],
+        ['.hero-copy p', '探索不同 AI 模型如何将同一个创意提示词，转化为独一无二的交互式 3D 体验。'],
+        ['.hero-copy .text-link', '进入展馆 <span aria-hidden="true">↓</span>'],
+        ['.hero-art figcaption span:nth-child(1)', '<strong>同一个起点，多种视觉语言。</strong> 来自项目档案的多模型实机对比影像。'],
+        ['.hero-art figcaption span:nth-child(2)', '动态影像 · 3D / Three.js'],
+        ['#concept .section-kicker', '创意起点'],
+        ['#concept-title', '同一个命题。<br><em>没有唯一答案。</em>'],
+        ['.concept-step:nth-child(1) small', '共同的创作起点'],
+        ['.concept-step:nth-child(1) strong', '一个提示词'],
+        ['.concept-step:nth-child(1) p', '一只正在骑自行车的鹈鹕，完全使用 Three.js 建模与制作动画。'],
+        ['.concept-step:nth-child(2) small', '不同的创意诠释者'],
+        ['.concept-step:nth-child(2) strong', '多个大模型'],
+        ['.concept-step:nth-child(2) p', '不同的大语言模型，回应同一个空间构建与运动协调挑战。'],
+        ['.concept-step:nth-child(3) small', '持续扩充的作品集'],
+        ['.concept-step:nth-child(3) strong', '不同的世界'],
+        ['.concept-step:nth-child(3) p', '各自独特的场景、视觉节奏、镜头语言与交互方式。'],
+        ['.concept-note', '提示词始终相同，想象不必相同。'],
+        ['#gallery .section-kicker', '完整作品集'],
+        ['#gallery-title', '作品展馆'],
+        ['.collection-instruction', '选择作品进行预览'],
+        ['#stage-open', '打开作品 ↗'],
+        ['#worlds .section-kicker', '实时视觉对照'],
+        ['#worlds-title', '同一只鸟。<br><em>不同的世界。</em>'],
+        ['#worlds .section-lead', '任选两种诠释，将它们并置观察。只有在你发出指令后，场景才会开始加载。'],
+        ['label[for="world-select-a"]', '世界 A'],
+        ['label[for="world-select-b"]', '世界 B'],
+        ['.comparison-note', '并排观察作品的视觉风格、运动和交互。作品需要 WebGL，部分作品通过 CDN 加载 Three.js。'],
+        ['#world-open-a', '打开 A ↗'],
+        ['#world-open-b', '打开 B ↗'],
+        ['#unload-button', '卸载实时世界'],
+        ['#about .section-kicker', '关于项目'],
+        ['#about-title', '一场开放式的<br><em>创意实验。</em>'],
+        ['.about-statement', '可能世界的集合。'],
+        ['.about-copy > p:nth-child(1)', 'Pelecanus 是一场持续进行的 AI 创意探索：不同的大语言模型将提示词转化为沉浸式的 3D 体验。'],
+        ['.about-copy > p:nth-child(2)', '每件作品都保留模型的原始输出。它们共同邀请我们细看视觉表达、空间构建、运动与交互，而不必评出胜负。'],
+        ['.about-copy > p:nth-child(3)', '原始作品均为独立的单文件 Three.js 体验。部分作品通过 CDN 加载 Three.js，需要网络连接。'],
+        ['.prompt-details summary', '阅读原始提示词'],
+        ['.footer-description', '一个持续进行的 AI 创意实验室与交互式 3D 艺术收藏馆。一个提示词，多个模型，不同的世界。'],
+        ['.footer-links a:nth-child(1)', 'GitHub 仓库 ↗'],
+        ['.footer-links a:nth-child(2)', '进入展馆 <span aria-hidden="true">↑</span>'],
+        ['.footer-note', '原始作品保持未改动 · 为开放网络而构建']
+      ].map(([selector, zh]) => {
+        const element = document.querySelector(selector);
+        return { element, en: element ? element.innerHTML : '', zh };
+      });
+
+      const translationAttributes = [
+        ['.brand', 'aria-label', 'Pelecanus，返回顶部'],
+        ['.nav', 'aria-label', '展览章节'],
+        ['#hero-motion', 'alt', '多屏对比展示八个不同的 AI 生成作品：一只鹈鹕正在骑自行车'],
+        ['.concept-flow', 'aria-label', '一个提示词，经由多个模型，生成不同的世界'],
+        ['.work-index', 'aria-label', '全部作品'],
+        ['#world-select-a', 'aria-label', '选择第一个模型'],
+        ['#world-select-b', 'aria-label', '选择第二个模型'],
+        ['.world-panel:nth-child(1)', 'aria-label', '第一个选中的世界'],
+        ['.world-panel:nth-child(2)', 'aria-label', '第二个选中的世界']
+      ].map(([selector, attribute, zh]) => {
+        const element = document.querySelector(selector);
+        return { element, attribute, en: element ? element.getAttribute(attribute) : '', zh };
+      });
+
+      function t(key) {
+        return dynamicCopy[currentLanguage][key];
+      }
+
+      function openInNewTabLabel(model) {
+        return currentLanguage === 'zh' ? `在新标签页打开 ${model}` : `Open ${model} in a new tab`;
+      }
+
+      function setLanguage(language) {
+        currentLanguage = language === 'zh' ? 'zh' : 'en';
+        document.documentElement.lang = currentLanguage === 'zh' ? 'zh-CN' : 'en';
+        document.title = t('title');
+        document.querySelector('meta[name="description"]').content = t('description');
+        translationElements.forEach(({ element, en, zh }) => {
+          if (element) element.innerHTML = currentLanguage === 'zh' ? zh : en;
+        });
+        translationAttributes.forEach(({ element, attribute, en, zh }) => {
+          if (element) element.setAttribute(attribute, currentLanguage === 'zh' ? zh : en);
+        });
+        document.querySelector('.prompt-details pre').textContent = currentLanguage === 'zh' ? originalChinesePrompt : englishPrompt;
+
+        languageToggle.textContent = currentLanguage === 'zh' ? 'EN' : '中文';
+        languageToggle.setAttribute('aria-label', currentLanguage === 'zh' ? '切换到英文' : 'Switch to Chinese');
+
+        document.getElementById('work-count').textContent = currentLanguage === 'zh'
+          ? `${works.length} 件作品`
+          : `${works.length} ${works.length === 1 ? 'work' : 'works'}`;
+        works.forEach(({ link, model }) => {
+          link.setAttribute('aria-label', openInNewTabLabel(model));
+        });
+        const activeWork = document.querySelector('.work-select[aria-pressed="true"]');
+        if (activeWork) stageOpen.setAttribute('aria-label', openInNewTabLabel(activeWork.dataset.model));
+        [['a', selectA], ['b', selectB]].forEach(([slot, select]) => {
+          document.getElementById(`world-open-${slot}`).setAttribute('aria-label', openInNewTabLabel(selectedWork(select).model));
+        });
+
+        document.querySelectorAll('.motion-toggle').forEach(button => {
+          const image = document.getElementById(button.dataset.motionTarget);
+          const action = button.dataset.paused === 'true' ? 'play' : 'pause';
+          button.textContent = t(`${action}Gif`);
+          button.setAttribute('aria-label', t(`${action}Hero`));
+          document.getElementById(`${image.id}-still`).setAttribute('aria-label', image.alt);
+        });
+        document.querySelectorAll('.loader').forEach(loader => { loader.textContent = t('loading'); });
+        document.querySelectorAll('.world-empty span').forEach(label => { label.textContent = t('ready'); });
+        compareButton.textContent = comparisonLoaded ? t('reload') : t('compare');
+
+        try { localStorage.setItem('pelecanus-language', currentLanguage); } catch (error) { /* Storage may be unavailable. */ }
+      }
+
+      function initialLanguage() {
+        try {
+          const saved = localStorage.getItem('pelecanus-language');
+          if (saved === 'zh' || saved === 'en') return saved;
+        } catch (error) { /* Fall back to the browser language. */ }
+        return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+      }
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      function enableMotionToggle(button) {
+        const image = document.getElementById(button.dataset.motionTarget);
+        if (!image) return;
+        button.textContent = t('pauseGif');
+        button.setAttribute('aria-label', t('pauseHero'));
+        const canvas = document.getElementById(`${image.id}-still`);
+        const context = canvas ? canvas.getContext('2d') : null;
+        let paused = false;
+
+        function pause() {
+          if (!image.isConnected || !image.complete || !image.naturalWidth || !context) return;
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          canvas.setAttribute('aria-label', image.alt);
+          image.hidden = true;
+          canvas.hidden = false;
+          button.textContent = t('playGif');
+          button.setAttribute('aria-label', t('playHero'));
+          button.dataset.paused = 'true';
+          paused = true;
+        }
+
+        function play() {
+          if (!image.isConnected) return;
+          image.hidden = false;
+          canvas.hidden = true;
+          button.textContent = t('pauseGif');
+          button.setAttribute('aria-label', t('pauseHero'));
+          button.dataset.paused = 'false';
+          paused = false;
+        }
+
+        function ready() {
+          button.disabled = false;
+          if (reducedMotion.matches) pause();
+        }
+
+        image.addEventListener('load', ready, { once: true });
+        if (image.complete && image.naturalWidth) ready();
+        button.addEventListener('click', () => paused ? play() : pause());
+        reducedMotion.addEventListener('change', event => {
+          if (event.matches) pause();
+        });
+      }
+
+      const galleryScreen = document.getElementById('gallery-screen');
+      document.querySelectorAll('[data-motion-target]').forEach(enableMotionToggle);
+
+      const works = Array.from(document.querySelectorAll('.work-row'), row => {
+        const button = row.querySelector('.work-select');
+        const link = row.querySelector('.work-open');
+        const { model, title } = button.dataset;
+        return { button, link, path: link.getAttribute('href'), model, title };
+      });
+      const stageModel = document.getElementById('stage-model');
+      const stageTitle = document.getElementById('stage-title');
+      const stageOpen = document.getElementById('stage-open');
+      const stackedGallery = window.matchMedia('(width < 1080px)');
+
+      function mountWorld(screen, { path, model, title }, loading = 'eager') {
+        const loader = document.createElement('div');
+        loader.className = 'loader';
+        loader.setAttribute('role', 'status');
+        loader.textContent = t('loading');
+
+        const iframe = document.createElement('iframe');
+        iframe.src = path;
+        iframe.loading = loading;
+        iframe.title = `${model} — ${title}`;
+        iframe.allowFullscreen = true;
+        iframe.addEventListener('load', () => { loader.hidden = true; }, { once: true });
+        screen.replaceChildren(loader, iframe);
+      }
+
+      function renderGalleryWork(work, loading) {
+        const { path, model, title } = work;
+        works.forEach(item => item.button.setAttribute('aria-pressed', String(item === work)));
+        stageModel.textContent = model;
+        stageTitle.textContent = title;
+        stageOpen.href = path;
+        stageOpen.setAttribute('aria-label', openInNewTabLabel(model));
+
+        mountWorld(galleryScreen, work, loading);
+      }
+
+      works.forEach(work => {
+        work.button.addEventListener('click', () => {
+          if (work.button.getAttribute('aria-pressed') !== 'true') renderGalleryWork(work);
+          if (stackedGallery.matches) {
+            stageModel.focus({ preventScroll: true });
+            galleryScreen.scrollIntoView({ block: 'start' });
+          }
+        });
+      });
+
+      const selectA = document.getElementById('world-select-a');
+      const selectB = document.getElementById('world-select-b');
+      works.forEach(work => {
+        selectA.add(new Option(work.model, work.path));
+        selectB.add(new Option(work.model, work.path));
+      });
+      selectA.value = document.getElementById('world-open-a').getAttribute('href');
+      selectB.value = document.getElementById('world-open-b').getAttribute('href');
+
+      const compareButton = document.getElementById('compare-button');
+      const unloadButton = document.getElementById('unload-button');
+      let comparisonLoaded = false;
+
+      function selectedWork(select) {
+        return works.find(work => work.path === select.value);
+      }
+
+      function setWorldPanel(slot, work, load) {
+        const screen = document.getElementById(`world-screen-${slot}`);
+        const caption = document.getElementById(`world-caption-${slot}`);
+        const open = document.getElementById(`world-open-${slot}`);
+        caption.textContent = work.title;
+        open.href = work.path;
+        open.setAttribute('aria-label', openInNewTabLabel(work.model));
+
+        if (!load) {
+          screen.innerHTML = '<div class="world-empty"><strong></strong><span></span></div>';
+          screen.querySelector('strong').textContent = work.model;
+          screen.querySelector('span').textContent = t('ready');
+          return;
+        }
+
+        mountWorld(screen, work);
+      }
+
+      function resetComparison() {
+        comparisonLoaded = false;
+        setWorldPanel('a', selectedWork(selectA), false);
+        setWorldPanel('b', selectedWork(selectB), false);
+        unloadButton.hidden = true;
+        compareButton.textContent = t('compare');
+      }
+
+      selectA.addEventListener('change', resetComparison);
+      selectB.addEventListener('change', resetComparison);
+      compareButton.addEventListener('click', () => {
+        setWorldPanel('a', selectedWork(selectA), true);
+        setWorldPanel('b', selectedWork(selectB), true);
+        comparisonLoaded = true;
+        unloadButton.hidden = false;
+        compareButton.textContent = t('reload');
+      });
+      unloadButton.addEventListener('click', () => {
+        if (comparisonLoaded) resetComparison();
+      });
+
+      languageToggle.addEventListener('click', () => {
+        setLanguage(currentLanguage === 'zh' ? 'en' : 'zh');
+      });
+      setLanguage(initialLanguage());
+      renderGalleryWork(works.find(({ path }) => path === stageOpen.getAttribute('href')), 'lazy');
+
+      const masthead = document.getElementById('masthead');
+      let lastScrollY = window.scrollY;
+      window.addEventListener('scroll', () => {
+        const currentY = window.scrollY;
+        const movingDown = currentY > lastScrollY;
+        const hasFocus = masthead.contains(document.activeElement);
+        masthead.classList.toggle('is-hidden', movingDown && currentY > 280 && !hasFocus);
+        lastScrollY = currentY;
+      }, { passive: true });
+      masthead.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => masthead.classList.remove('is-hidden'));
+      });
+      masthead.addEventListener('focusin', () => masthead.classList.remove('is-hidden'));
+    })();
+  </script>
 </body>
 </html>
