@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pelecanus — one prompt, multiple LLMs, different 3D worlds.">
+  <title>Pelecanus · AI 3D Gallery</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1020;--panel:#121a2b;--line:#26334b;--muted:#9aa8bd;--text:#edf3ff;--accent:#8bb7ff}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#1b3155 0,transparent 55%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+    main{width:min(100% - 32px,1000px);margin:0 auto;padding:64px 0}
+    header{text-align:center;margin-bottom:42px}h1{font-size:clamp(2.4rem,7vw,4.4rem);line-height:1.05;margin:0 0 14px;letter-spacing:-.04em}
+    .lead{color:var(--muted);font-size:1.08rem}.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:24px}
+    .button{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:10px;color:var(--text);text-decoration:none;background:#17243a}
+    .button.primary{background:#315f9e;border-color:#4779bc}
+    h2{font-size:1.25rem;margin:0 0 16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .card{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:rgba(18,26,43,.88);color:var(--text);text-decoration:none;transition:border-color .15s,transform .15s}
+    .card:hover{border-color:var(--accent);transform:translateY(-2px)}.card small{display:block;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+    footer{text-align:center;color:var(--muted);font-size:.9rem;margin-top:44px}footer a{color:var(--accent)}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🐦 Pelecanus</h1>
+    <div class="lead">One Prompt. Multiple LLMs. Different 3D Worlds.</div>
+    <p>Explore how different AI models turn the same creative challenge into 3D experiences.</p>
+    <nav class="actions">
+      <a class="button primary" href="#gallery">Explore the gallery</a>
+      <a class="button" href="https://github.com/niaonao/pelecanus">GitHub repository</a>
+    </nav>
+  </header>
+  <section id="gallery">
+    <h2>Model gallery</h2>
+    <div class="grid">
+      <a class="card" href="./html/Claude-Fable-5.2.html">Claude Fable 5.2<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Claude-Opus-5.5.html">Claude Opus 5.5<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Claude-Sonnet-5.html">Claude Sonnet 5<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/DeepSeek-V4.1-Flash-1017.html">DeepSeek V4.1 Flash 1017<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/DeepSeek-V4.1-Flash.html">DeepSeek V4.1 Flash<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GLM-5.3-Flash.html">GLM 5.3 Flash<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GLM-5.3.html">GLM 5.3<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GPT-5.6-Luna.html">GPT 5.6 Luna<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GPT-5.6-Sol.html">GPT 5.6 Sol<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GPT-6-Astra.html">GPT 6 Astra<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/GPT-6.1-Sol.html">GPT 6.1 Sol<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Gemini-3.1-Pro-Preview.html">Gemini 3.1 Pro Preview<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Gemini-3.6-Flash.html">Gemini 3.6 Flash<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Gemini-3.8-Flash.html">Gemini 3.8 Flash<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Hy4-Preview.html">Hy4 Preview<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Kimi-K3.1-Pro.html">Kimi K3.1 Pro<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Kimi-K3.html">Kimi K3<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Muse-Wonder.html">Muse Wonder<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Qwen-3.8-Max.html">Qwen 3.8 Max<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Space-Bunny-Alpha.html">Space Bunny Alpha<small>Open 3D experience ↗</small></a>
+      <a class="card" href="./html/Step-5-Preview.html">Step 5 Preview<small>Open 3D experience ↗</small></a>
+    </div>
+  </section>
+  <footer>Pelecanus · AI-generated 3D creativity experiment<br><a href="https://github.com/niaonao/pelecanus">View source on GitHub</a></footer>
+</main>
+</body>
+</html>
