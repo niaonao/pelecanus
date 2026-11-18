@@ -50,6 +50,8 @@ Pelecanus 是一个 AI 创意实验和交互式 3D 画廊。不同的大模型�
 | DeepSeek V4.1 Flash | [打开作品](https://niaonao.github.io/pelecanus/html/DeepSeek-V4.1-Flash.html) |
 | GLM 5.3 Flash | [打开作品](https://niaonao.github.io/pelecanus/html/GLM-5.3-Flash.html) |
 | GLM 5.3 | [打开作品](https://niaonao.github.io/pelecanus/html/GLM-5.3.html) |
+| GPT-6.2 Astra (Ultra) | [打开作品](https://niaonao.github.io/pelecanus/html/GPT-6.2-Astra-Ultra.html) |
+| GPT-6.2 Sol (Ultra) | [打开作品](https://niaonao.github.io/pelecanus/html/GPT-6.2-Sol-Ultra.html) |
 | GPT-6 Astra | [打开作品](https://niaonao.github.io/pelecanus/html/GPT-6-Astra.html) |
 | GPT-6.1 Sol | [打开作品](https://niaonao.github.io/pelecanus/html/GPT-6.1-Sol.html) |
 | GPT-5.6 Luna | [打开作品](https://niaonao.github.io/pelecanus/html/GPT-5.6-Luna.html) |
@@ -75,7 +77,7 @@ pelecanus/
 ├── img/
 │   ├── gif.gif
 │   ├── opus5.5.gif
-│   └── Artificial Analysis Intelligence Index (11 Nov '26).png
+│   └── Artificial Analysis Intelligence Index (17 Nov '26).png
 ├── README.md
 └── LICENSE
 ```
@@ -88,6 +90,7 @@ pelecanus/
 
 ## 最近上新
 
+- 2026-11-18：新增 [GPT-6.2 Sol (Ultra)](html/GPT-6.2-Sol-Ultra.html) 和 [GPT-6.2 Astra (Ultra)](html/GPT-6.2-Astra-Ultra.html)。
 - 2026-11-11：新增 [Claude Fable 5.2](html/Claude-Fable-5.2.html)。
 
 ## 参考与演示
@@ -96,11 +99,11 @@ pelecanus/
 - 视频演示：[Bilibili](https://www.bilibili.com/video/BV11GYv6oEJG/)
 
 <details>
-<summary>AA 智能榜单快照（2026-11-11）</summary>
+<summary>AA 智能榜单快照（2026-11-17）</summary>
 
-下图是 Artificial Analysis Intelligence Index 在 2026-11-11 的快照，仅供背景参考，不代表本仓库作品的排名。点击图片可查看[最新交互榜单](https://artificialanalysis.ai/models#intelligence)。
+下图是 Artificial Analysis Intelligence Index 在 2026-11-17 的快照，供比较模型时参考。点击图片可查看[最新交互榜单](https://artificialanalysis.ai/models#intelligence)。
 
-[![Artificial Analysis Intelligence Index（2026-11-11）](img/Artificial%20Analysis%20Intelligence%20Index%20%2811%20Nov%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
+[![Artificial Analysis Intelligence Index（2026-11-17）](img/Artificial%20Analysis%20Intelligence%20Index%20%2817%20Nov%20%2726%29.png)](https://artificialanalysis.ai/models#intelligence)
 
 </details>
 
