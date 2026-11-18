@@ -25,6 +25,21 @@ Pelecanus 是一个 AI 创意实验和交互式 3D 画廊。不同的大模型�
 
 </details>
 
+<details>
+<summary>查看英文版提示词</summary>
+
+```text
+Create a sophisticated, interactive 3D web scene using Three.js: a pelican riding a bicycle.
+
+The pelican, bicycle, environment, animation, lighting, camera, and interactions are all implemented procedurally. The pelican needs to realistically ride a bicycle with coordinated leg, pedal, wheel, and body movements.
+
+Do not use SVG, 2D Canvas, external 3D models, or pre-rendered animations.
+
+The final output is a complete HTML file that can run directly in modern browsers.
+```
+
+</details>
+
 ## 代表作品
 
 ### Claude Opus 5.5 · Pelican on a Bicycle
@@ -90,8 +105,8 @@ pelecanus/
 
 ## 最近上新
 
-- 2026-11-18：新增 [GPT-6.2 Sol (Ultra)](html/GPT-6.2-Sol-Ultra.html) 和 [GPT-6.2 Astra (Ultra)](html/GPT-6.2-Astra-Ultra.html)。
-- 2026-11-11：新增 [Claude Fable 5.2](html/Claude-Fable-5.2.html)。
+- 2026-11-18：新增 [GPT-6.2 Sol (Ultra)](https://niaonao.github.io/pelecanus/html/GPT-6.2-Sol-Ultra.html) 和 [GPT-6.2 Astra (Ultra)](https://niaonao.github.io/pelecanus/html/GPT-6.2-Astra-Ultra.html)。
+- 2026-11-11：新增 [Claude Fable 5.2](https://niaonao.github.io/pelecanus/html/Claude-Fable-5.2.html)。
 
 ## 参考与演示
 
